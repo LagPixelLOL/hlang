@@ -64,10 +64,52 @@ add_custom_target(prelude ALL
   COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/lib ${CMAKE_BINARY_DIR}/lib
   COMMENT "Syncing HolyC prelude")
 
-# ---- tests ----
+# ---- tests (ctest: one process per test, run in parallel via `ctest -j`) ----
 enable_testing()
+set(RUN_ONE ${CMAKE_SOURCE_DIR}/tests/run_one.sh)
+
+# each add_test runs run_one.sh with HCC pointed at the freshly built hcc;
+# exit code 77 means "not applicable for this mode" -> reported as skipped.
+function(hc_add_test tname mode file)
+  add_test(NAME ${tname}
+           COMMAND ${CMAKE_COMMAND} -E env HCC=$<TARGET_FILE:hcc>
+                   sh ${RUN_ONE} ${mode} ${file})
+  set_tests_properties(${tname} PROPERTIES SKIP_RETURN_CODE 77)
+endfunction()
+
+file(GLOB CASE_TESTS  CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/tests/cases/*.HC)
+file(GLOB ERROR_TESTS CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/tests/errors/*.HC)
+file(GLOB FE_TESTS    CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/tests/frontend/*.HC)
+
+foreach(hc ${CASE_TESTS})
+  get_filename_component(name ${hc} NAME_WE)
+  hc_add_test(case.${name}.jit jit ${hc})   # golden output under JIT
+  hc_add_test(case.${name}.aot aot ${hc})   # ...and under AOT
+endforeach()
+foreach(hc ${ERROR_TESTS})
+  get_filename_component(name ${hc} NAME_WE)
+  hc_add_test(error.${name} error ${hc})    # must fail with the //ERR: message
+endforeach()
+foreach(hc ${FE_TESTS})
+  get_filename_component(name ${hc} NAME_WE)
+  get_filename_component(dir ${hc} DIRECTORY)
+  # register a dump test only when its golden actually exists
+  if(EXISTS ${dir}/${name}.tokens)
+    hc_add_test(frontend.${name}.tokens tokens ${hc})
+  endif()
+  if(EXISTS ${dir}/${name}.ast)
+    hc_add_test(frontend.${name}.ast ast ${hc})
+  endif()
+endforeach()
+
+# `ninja check` builds hcc + prelude, then runs the suite in parallel.
+include(ProcessorCount)
+ProcessorCount(NPROC)
+if(NPROC EQUAL 0)
+  set(NPROC 4)
+endif()
 add_custom_target(check
-  COMMAND ${CMAKE_COMMAND} -E env HCC=$<TARGET_FILE:hcc>
-          ${CMAKE_SOURCE_DIR}/tests/run_tests.sh
-  DEPENDS hcc
-  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+  COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -j ${NPROC}
+  DEPENDS hcc prelude
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+  USES_TERMINAL)
