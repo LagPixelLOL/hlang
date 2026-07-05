@@ -20,6 +20,7 @@ static void usage() {
             "  --emit-llvm        print LLVM IR\n"
             "  --dump-tokens      dump lexer tokens\n"
             "  --dump-ast         dump parse tree\n"
+            "  -O0..-O3           optimization level (default -O0)\n"
             "  -I <dir>           add include search dir\n"
             "  --no-prelude       don't auto-include the HolyC stdlib prelude\n");
 }
