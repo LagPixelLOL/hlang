@@ -11,7 +11,7 @@ with three answers:
   the entry says why.
 * **Deviations** — any difference from the doc, and where it is
   documented (all deliberate deviations must appear in the top-level
-  README per DEVELOPMENT.md rule #1).
+  `DEVIATIONS.md` per DEVELOPMENT.md rule #1).
 
 | file | source document |
 |---|---|

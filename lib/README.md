@@ -20,7 +20,7 @@ symbol is registered in both the JIT symbol map and `libhcrt.a`).
 |---|---|
 | truth | `TRUE FALSE ON OFF NULL`, `Bool` (= `U8`) — `#define`s, as in TempleOS |
 | int bounds | `I8_MIN I8_MAX U8_MAX I16_MIN I16_MAX U16_MAX I32_MIN I32_MAX U32_MAX I64_MIN I64_MAX U64_MAX` |
-| float consts | `pi log2_10 log10_2 loge_2` (F64 — TempleOS's 10-byte versions are 64-bit here, see README limitations) |
+| float consts | `pi log2_10 log10_2 loge_2` (F64 — TempleOS's 10-byte versions are 64-bit here, see DEVIATIONS.md) |
 | compiler options | `OPTf_*` (12 flags) + `Option(opt_num,val)` — accepted no-ops |
 
 ## The task: `Fs`
@@ -37,7 +37,7 @@ _extern HC_Fs CTask *Fs;
 ```
 
 `Fs` carries only the exception-related fields — not the full TempleOS
-task struct, and there is no `Fs->hash_table` (README limitations).
+task struct, and there is no `Fs->hash_table` (DEVIATIONS.md).
 
 ## Output
 
@@ -139,8 +139,8 @@ Bt(U0 *bit_field,I64 bit_num)` (test) · `Bts` (test-and-set) · `Btr`
 char arg" (`throw('Point1')`). The handler search continues **outward**
 unless the `catch{}` sets `Fs->catch_except=TRUE`. `U0 PutExcept(Bool
 catch_it=TRUE)` prints `Except:'CH' at <caller>` and (by default)
-claims the exception. Lowered with setjmp frames in hcrt — see README
-limitations (don't return out of a `try{}`).
+claims the exception. Lowered with setjmp frames in hcrt — see
+DEVIATIONS.md (don't return out of a `try{}`).
 
 ## `#exe {}` support
 

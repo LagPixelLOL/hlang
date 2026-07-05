@@ -24,14 +24,15 @@ language behavior:
   are extended to 64-bit; intermediate calculations are done with
   64-bit values"* (pointers are just I64s → unscaled `+`/`-`, scaled
   indexing), implement it once, test it, and **record the decision in
-  the matching `checklist/` row** (plus the README's judgment-calls
-  list when it is a headline behavior). A silent divergence is a bug; a
+  the matching `checklist/` row** (plus DEVIATIONS.md's judgment-calls
+  list when it is user-visible). A silent divergence is a bug; a
   documented judgment call is engineering.
 * The per-claim audit trail lives in `checklist/` — one row per doc
   claim with *implemented?* / *tested where?* / *deviations*. When you
   add or change doc-visible behavior, update the matching checklist row
-  in the same commit; the README keeps only the headline semantics and
-  the two deviation lists (limitations, judgment calls).
+  in the same commit. The two normative deviation lists (limitations,
+  judgment calls) live in `DEVIATIONS.md`; the README keeps only the
+  headline semantics.
 
 ### 2. Two backends, one behavior
 
@@ -53,7 +54,7 @@ These are different standards, on purpose:
 * **Language** (lexer/parser/codegen): exactness. Match documented
   behavior bit-for-bit. Any deviation is either a bug or a documented
   limitation with a clean error message — recorded in the matching
-  `checklist/` row, and in the README's limitations list when
+  `checklist/` row, and in DEVIATIONS.md's limitations list when
   user-facing.
 * **Stdlib** (`runtime/hcrt.c` + `lib/HolyC.HH`, reference in
   `lib/README.md`): fidelity of *names and feel*, hosted reality of
@@ -127,7 +128,7 @@ worth an `//ERR:` test in `tests/errors/`.
 * **Test-first for behavior questions.** When unsure what some HolyC
   construct does, write the golden test from the doc first, then make
   it pass. If the doc doesn't answer: decide, record the call in
-  `checklist/` (and the README judgment-calls list if headline), test.
+  `checklist/` (and DEVIATIONS.md's judgment-calls list), test.
 * **Don't project C onto HolyC.** For every test you write, ask: is this
   behavior actually HolyC (doc / x86 / the recursive-descent structure),
   or am I assuming C? Corners that C leaves unspecified/UB (argument and
@@ -171,6 +172,7 @@ worth an `//ERR:` test in `tests/errors/`.
 | stdlib HolyC surface + reference doc | `lib/HolyC.HH`, `lib/README.md` |
 | test runner + suites | `tests/` |
 | per-claim doc-conformance record (implemented/tested/deviations) | `checklist/` |
+| the two normative deviation lists (limitations, judgment calls) | `DEVIATIONS.md` |
 | commented example programs | `examples/` |
 
 ## Adding a stdlib function (checklist)
@@ -190,6 +192,5 @@ worth an `//ERR:` test in `tests/errors/`.
 2. Lexer → parser (AST node if needed) → codegen. Keep the value model.
 3. Negative tests for new diagnostics.
 4. Update the matching `checklist/` row (implemented/tested/deviations);
-   if partial or divergent, also the README limitations or
-   judgment-calls list.
+   if partial or divergent, also DEVIATIONS.md.
 5. `ninja -C build check`, commit.
