@@ -224,3 +224,8 @@ The cases include the doc's examples verbatim (widening, `NullCase`,
 coverage of precedence, chaining, defaults/skipped args, varargs,
 classes, exceptions, sub-int access, pointers, the preprocessor, `#exe`,
 strings/memory/math, and I/O.
+
+## Contributing
+
+See [DEVELOPMENT.md](DEVELOPMENT.md) for the development philosophy
+(spec fidelity rules, JIT/AOT parity, stdlib policy, checklists).
