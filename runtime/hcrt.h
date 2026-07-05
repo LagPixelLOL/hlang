@@ -84,6 +84,7 @@ double HC_Log2(double x);
 double HC_Log10(double x);
 double HC_Exp(double x);
 double HC_Pow(double base, double e);
+int64_t HC_PowI64(int64_t base, int64_t e);
 double HC_Floor(double x);
 double HC_Ceil(double x);
 double HC_Round(double x);

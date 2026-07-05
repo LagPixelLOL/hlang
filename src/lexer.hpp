@@ -116,6 +116,9 @@ public:
 
     Token next();
 
+    // Push a file to be lexed before the main file (stdlib prelude).
+    bool includeFirst(const std::string& path);
+
     bool hadError() const { return hadError_; }
     void setExeHook(ExeHook h) { exeHook_ = std::move(h); }
     void addDefine(const std::string& name, std::vector<Token> body) {
@@ -170,6 +173,7 @@ private:
     void lexCharsInto(Token& t, char quote);
     Token lexNumber();
     Token expandOrReturn(Token t);  // apply macro expansion
+    bool builtinMacro(Token& t);    // __DATE__, __FILE__, __LINE__, ...
     void handleExeBlock();
 };
 

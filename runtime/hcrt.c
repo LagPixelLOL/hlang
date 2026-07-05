@@ -515,6 +515,17 @@ double HC_Log2(double x) { return log2(x); }
 double HC_Log10(double x) { return log10(x); }
 double HC_Exp(double x) { return exp(x); }
 double HC_Pow(double base, double e) { return pow(base, e); }
+/* integer form of HolyC's backtick power operator */
+int64_t HC_PowI64(int64_t base, int64_t e) {
+    if (e < 0) return 0;
+    int64_t r = 1;
+    while (e) {
+        if (e & 1) r *= base;
+        base *= base;
+        e >>= 1;
+    }
+    return r;
+}
 double HC_Floor(double x) { return floor(x); }
 double HC_Ceil(double x) { return ceil(x); }
 double HC_Round(double x) { return round(x); }

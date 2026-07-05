@@ -205,8 +205,52 @@ Token Lexer::next() {
     }
 }
 
+bool Lexer::includeFirst(const std::string& path) { return openInclude(path, here()); }
+
+// TempleOS compiler directives implemented natively (the originals use
+// #exe{StreamPrint(...)} against compiler internals).
+bool Lexer::builtinMacro(Token& t) {
+    const std::string& n = t.text;
+    if (n == "__LINE__") {
+        t.kind = Tok::IntLit;
+        t.ival = t.loc.line;
+        return true;
+    }
+    if (n == "__FILE__") {
+        t.kind = Tok::StrLit;
+        t.text = t.loc.file;
+        return true;
+    }
+    if (n == "__DIR__") {
+        t.kind = Tok::StrLit;
+        t.text = dirOf(t.loc.file);
+        return true;
+    }
+    if (n == "__CMD_LINE__") {
+        t.kind = Tok::IntLit;
+        t.ival = jitMode_ ? 1 : 0;
+        return true;
+    }
+    if (n == "__DATE__" || n == "__TIME__") {
+        time_t now = time(nullptr);
+        struct tm tmv;
+        localtime_r(&now, &tmv);
+        char buf[32];
+        if (n == "__DATE__")
+            snprintf(buf, sizeof buf, "%02d/%02d/%04d", tmv.tm_mon + 1, tmv.tm_mday,
+                     tmv.tm_year + 1900);
+        else
+            snprintf(buf, sizeof buf, "%02d:%02d:%02d", tmv.tm_hour, tmv.tm_min, tmv.tm_sec);
+        t.kind = Tok::StrLit;
+        t.text = buf;
+        return true;
+    }
+    return false;
+}
+
 Token Lexer::expandOrReturn(Token t) {
     if (t.kind != Tok::Ident || t.noExpand) return t;
+    if (builtinMacro(t)) return t;
     auto it = macros_.find(t.text);
     if (it == macros_.end()) return t;
     if (expanding_.count(t.text)) {  // recursion guard: leave as-is
