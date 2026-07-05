@@ -23,9 +23,10 @@ language behavior:
   interpretation most consistent with the doctrine that *"all values
   are extended to 64-bit; intermediate calculations are done with
   64-bit values"* (pointers are just I64s → unscaled `+`/`-`, scaled
-  indexing), implement it once, test it, and **document the decision in
-  the README**. A silent divergence is a bug; a documented judgment
-  call is engineering.
+  indexing), implement it once, test it, and **record the decision in
+  the matching `checklist/` row** (plus the README's judgment-calls
+  list when it is a headline behavior). A silent divergence is a bug; a
+  documented judgment call is engineering.
 * The per-claim audit trail lives in `checklist/` — one row per doc
   claim with *implemented?* / *tested where?* / *deviations*. When you
   add or change doc-visible behavior, update the matching checklist row
@@ -50,10 +51,13 @@ and produce a clear diagnostic in the other mode.
 These are different standards, on purpose:
 
 * **Language** (lexer/parser/codegen): exactness. Match documented
-  behavior bit-for-bit. Any deviation is either a bug or a
-  README-documented limitation with a clean error message.
-* **Stdlib** (`runtime/hcrt.c` + `lib/HolyC.HH`): fidelity of *names
-  and feel*, hosted reality of *implementation*. `Free(NULL)` is fine
+  behavior bit-for-bit. Any deviation is either a bug or a documented
+  limitation with a clean error message — recorded in the matching
+  `checklist/` row, and in the README's limitations list when
+  user-facing.
+* **Stdlib** (`runtime/hcrt.c` + `lib/HolyC.HH`, reference in
+  `lib/README.md`): fidelity of *names and feel*, hosted reality of
+  *implementation*. `Free(NULL)` is fine
   because Terry said so. `MSize` exists. `GetStr` returns a MAlloc'ed
   line. `Print` speaks `%z` and comma-flags. But underneath it's libc,
   and that's fine — TempleOS's VGA, tasks, and heaps are not being
@@ -122,7 +126,8 @@ worth an `//ERR:` test in `tests/errors/`.
   tests → hardening) is the intended template.
 * **Test-first for behavior questions.** When unsure what some HolyC
   construct does, write the golden test from the doc first, then make
-  it pass. If the doc doesn't answer, decide, document in README, test.
+  it pass. If the doc doesn't answer: decide, record the call in
+  `checklist/` (and the README judgment-calls list if headline), test.
 * **Don't project C onto HolyC.** For every test you write, ask: is this
   behavior actually HolyC (doc / x86 / the recursive-descent structure),
   or am I assuming C? Corners that C leaves unspecified/UB (argument and
@@ -163,22 +168,28 @@ worth an `//ERR:` test in `tests/errors/`.
 | object emission, linking, opt pipeline | `src/aot.cpp` |
 | CLI, prelude/runtime discovery | `src/driver.cpp`, `src/main.cpp` |
 | runtime/stdlib C side | `runtime/hcrt.{h,c}` |
-| stdlib HolyC surface | `lib/HolyC.HH` |
+| stdlib HolyC surface + reference doc | `lib/HolyC.HH`, `lib/README.md` |
 | test runner + suites | `tests/` |
+| per-claim doc-conformance record (implemented/tested/deviations) | `checklist/` |
+| commented example programs | `examples/` |
 
 ## Adding a stdlib function (checklist)
 
 1. Implement `HC_Foo` in `runtime/hcrt.c`, declare in `runtime/hcrt.h`.
 2. Register it in `defineRuntimeSymbols()` (`src/jit.cpp`).
 3. Bind it in `lib/HolyC.HH`: `_extern HC_Foo RetType Foo(args);`
-   with TempleOS-faithful name, defaults, and argument order.
-4. Add/extend a golden test in `tests/cases/` (it runs in both modes).
-5. `ninja -C build check`, commit.
+   with TempleOS-faithful name, defaults, and argument order (check the
+   TempleOS sources/docs before inventing one).
+4. Document it in `lib/README.md` (signature, defaults, deviations).
+5. Add/extend a golden test in `tests/cases/` (it runs in both modes).
+6. `ninja -C build check`, commit.
 
 ## Adding a language feature (checklist)
 
 1. Find the doc passage; put its example in a test verbatim.
 2. Lexer → parser (AST node if needed) → codegen. Keep the value model.
 3. Negative tests for new diagnostics.
-4. Update README's support list (and limitations if partial).
+4. Update the matching `checklist/` row (implemented/tested/deviations);
+   if partial or divergent, also the README limitations or
+   judgment-calls list.
 5. `ninja -C build check`, commit.
