@@ -63,3 +63,14 @@ try {
   Fs->catch_except=TRUE;
 }
 "survived\n";
+
+// PutExcept() as the handler: prints Except:'CH' and, with its default
+// arg (catch_it=TRUE), claims the exception. The caller address printed
+// is runtime-dependent, so pin except_callers[0] -- it is plain data.
+try {
+  throw('Psalm');
+} catch {
+  Fs->except_callers[0]=0;
+  PutExcept;
+}
+"after PutExcept\n";

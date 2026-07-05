@@ -16,9 +16,15 @@ if (0.5<x<1.5) "chained floats\n";
 "%5.3f %5.3f\n",Log2(8.0),Pow(2,10);
 "%5.3f %5.3f %5.3f %5.3f\n",Floor(2.7),Ceil(2.1),Round(2.5),Trunc(-2.7);
 "%5.3f %5.3f\n",ASin(Sin(0.5)),ATan(1)*4;
+"%5.3f %5.3f\n",Tan(pi/4),ACos(0)*2;
 "%5.3f\n",Arg(1,1)*4;    //atan2(y=1,x=1)*4 = pi
 "%d %d %d\n",MinI64(-3,4),MaxI64(-3,4),SignI64(-9);
 "%d %d\n",AbsI64(-7),SqrI64(-5);
+// HolyC-implemented prelude helpers (the stdlib eats its own dog food)
+I64 sa=3,sb=8;
+SwapI64(&sa,&sb);
+"%d %d\n",sa,sb;
+"%d %d %d\n",ClampI64(-5,0,10),ClampI64(5,0,10),ClampI64(15,0,10);
 "%5.3f\n",Abs(-2.5);
 // default F64 arg
 F64 FD(F64 v=1.25) { return v*2; }

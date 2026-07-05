@@ -36,3 +36,9 @@ I64 r2=RandU64;
 "%d\n",r1==r2;
 Seed(43);
 "%d\n",r1==RandU64;
+// the other Rand widths: deterministic under Seed, range-bounded
+Seed(7);
+I64 ri=RandI64,r32=RandU32,r16=RandU16;
+Seed(7);
+"%d %d %d\n",ri==RandI64,r32==RandU32,r16==RandU16;
+"%d %d\n",0<=r32<=0xFFFFFFFF,0<=r16<=0xFFFF;

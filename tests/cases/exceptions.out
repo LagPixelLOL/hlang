@@ -26,3 +26,5 @@ caught loop after 6
 inner in
 outer in
 survived
+Except:'Psalm' at 0000000000000000
+after PutExcept

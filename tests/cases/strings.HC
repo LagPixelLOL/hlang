@@ -28,3 +28,7 @@ Free(m);
 "%s\n",NULL(U8 *);
 // escapes & $$
 "tab\there $$5\n";
+// PutS/PutChar are RAW output -- no format interpretation at all
+PutS("PutS: 100% raw\n");
+PutChar('>');
+PutChar('\n');
