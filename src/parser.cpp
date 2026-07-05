@@ -580,6 +580,8 @@ struct Parser::Impl {
             error(tok().loc, "offset(classname.membername) expected");
         } else {
             e->className = take().text;
+            auto ci = prog->classes.find(e->className);
+            if (ci != prog->classes.end()) e->classRef = ci->second;  // pin now: dups overshadow
             expect(P::Dot, "in offset(classname.membername)");
             if (tok().kind == Tok::Ident)
                 e->memberName = take().text;
@@ -1096,8 +1098,9 @@ struct Parser::Impl {
             // a '(' here means someone wrote a function definition inside a
             // function body -- HolyC functions are top-level only
             if (is(P::LParen)) {
-                error(tok().loc, "nested function definitions are not allowed in HolyC "
-                                 "(functions are top-level only)");
+                error(tok().loc,
+                      "nested function definitions are not allowed in HolyC "
+                      "(functions are top-level only)");
                 skipBraceBlock();
                 return s;
             }
@@ -1179,8 +1182,16 @@ struct Parser::Impl {
         auto existing = prog->classes.find(name.text);
         if (existing != prog->classes.end()) {
             ci = existing->second;
-            if (ci->complete && (is(P::LBrace) || is(P::Colon)))
-                error(name.loc, "class '" + name.text + "' redefined");
+            if (ci->complete && (is(P::LBrace) || is(P::Colon))) {
+                // Duplicate class definitions OVERSHADOW the earlier one
+                // (spec scoping table: class dups are DupsAllowed, "a dup
+                // overshadows the original") -- do not project C's
+                // one-definition rule onto HolyC. Earlier declarations keep
+                // their pinned ClassInfo; later lookups see the new one.
+                ci = std::make_shared<ClassInfo>();
+                ci->name = name.text;
+                prog->classes[name.text] = ci;
+            }
         } else {
             ci = std::make_shared<ClassInfo>();
             ci->name = name.text;
@@ -1203,10 +1214,7 @@ struct Parser::Impl {
 
         expect(P::LBrace, "in class definition");
         int64_t offset = 0;
-        if (ci->base && ci->base->cls) {
-            offset = ci->base->cls->size;
-            ci->align = ci->base->cls->align;
-        }
+        if (ci->base && ci->base->cls) offset = ci->base->cls->size;
         int64_t maxSize = offset;
         while (!is(P::RBrace)) {
             if (tok().kind == Tok::Eof) {
@@ -1241,18 +1249,20 @@ struct Parser::Impl {
                     parseAssign();  // value expr (stored raw; reflection not supported)
                     m.meta.emplace_back(metaName, metaVal);
                 }
-                int64_t al = m.type->align() ? m.type->align() : 1;
                 int64_t sz = m.type->size();
                 if (isUnion) {
                     m.offset = 0;
                     if (sz > maxSize) maxSize = sz;
                 } else {
-                    offset = (offset + al - 1) / al * al;
+                    // HolyC packs class members: no automatic alignment
+                    // padding, ever. TempleOS aligns by hand with 'pad'/
+                    // 'reserved' members (see CDirEntry) -- that is why the
+                    // spec special-cases those names. Do NOT project C
+                    // struct/ABI padding onto HolyC.
                     m.offset = offset;
                     offset += sz;
                     if (offset > maxSize) maxSize = offset;
                 }
-                if (al > ci->align) ci->align = al;
                 // multiple "pad"/"reserved" members allowed by spec
                 ci->members.push_back(std::move(m));
                 if (accept(P::Comma)) continue;
@@ -1260,9 +1270,8 @@ struct Parser::Impl {
                 break;
             }
         }
-        take();  // }
-        ci->size = (maxSize + ci->align - 1) / ci->align * ci->align;
-        if (ci->size == 0) ci->size = 0;  // zero-size classes allowed (U0-spirit)
+        take();              // }
+        ci->size = maxSize;  // packed: no tail padding (sizeof is the sum)
         ci->complete = true;
 
         TopItem item;

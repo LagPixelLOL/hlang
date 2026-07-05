@@ -29,8 +29,7 @@ struct ClassInfo {
     TypePtr base;       // single inheritance
     TypePtr wholeType;  // "I64i union I64 {...}" -- type used when accessed whole
     std::vector<ClassMember> members;
-    int64_t size = 0;
-    int64_t align = 1;
+    int64_t size = 0;  // packed: sum of member sizes (no C-style padding)
     bool complete = false;
     const ClassMember* findMember(const std::string& n) const;
 };
@@ -65,7 +64,6 @@ struct Type {
     bool variadic = false;  // HolyC ... (argc/argv)
 
     int64_t size() const;
-    int64_t align() const;
     bool isF64() const { return kind == F64; }
     bool isInt() const { return kind == Int; }
     bool isPtr() const { return kind == Ptr; }
@@ -118,8 +116,9 @@ struct Expr {
     P punct = P::None;    // operator
     bool prefix = false;  // for Unary ++/--
     bool isArrow = false;
-    TypePtr castType;                   // Cast/SizeofType
-    std::string className, memberName;  // OffsetOf
+    TypePtr castType;                     // Cast/SizeofType
+    std::string className, memberName;    // OffsetOf
+    std::shared_ptr<ClassInfo> classRef;  // OffsetOf: pinned at parse (class dups overshadow)
     std::vector<ExprPtr> kids;
     std::vector<P> chainOps;       // ChainCmp
     std::vector<bool> argPresent;  // Call: per-arg "was written" (for Test(,3))

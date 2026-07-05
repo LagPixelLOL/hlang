@@ -13,7 +13,8 @@ p.x=1; p.y=2; p.z=3;
 "%d %d %d\n",sizeof(CPoint),sizeof(CPoint3),offset(CPoint3.z);
 "%d %d\n",sizeof(CPoint3.z),sizeof(CPoint.x);
 
-// mixed member sizes & alignment
+// mixed member sizes: HolyC packs members (no C-style alignment padding;
+// TempleOS pads by hand with 'pad'/'reserved' members). See tests/anti_c/.
 class CMix
 {
   U8 a;

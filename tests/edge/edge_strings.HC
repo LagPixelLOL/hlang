@@ -1,7 +1,8 @@
 // EDGE: string escapes, embedded nulls, 8-char consts, format-string edges.
 
-// every escape hcc supports (\n \t \r \0 \\ \" \x are doc-grade;
-// \a \b \f \v are a hosted superset -- not asserted as canonical HolyC)
+// every escape hcc supports. The archived doc has no escape table, so
+// only \n \t \\ \" (ubiquitous in doc examples) are doc-attested; the
+// rest (\r \0 \x \a \b \f \v) are pinned here as hcc-defined behavior.
 "esc:[\t][\n][\r ->][\a][\b][\f][\v][\\][\"][\']\n";
 "hex:[\x41\x42\x43][\x7A]\n";        // ABC z
 
@@ -49,7 +50,7 @@ U8 *msg="line1 "
 U8 *ranks="Cadet\0Ensign\0Captain\0Admiral";
 "%z %z %z\n",0,ranks,2,ranks,3,ranks;
 
-// out-of-range %z / unknown code passes through
+// unknown fmt code passes through (hcc-defined; doc-silent corner)
 "unknown:[%w]\n",5;                  // %w not a code -> literal-ish
 
 // string helpers on edge inputs

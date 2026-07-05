@@ -1,8 +1,8 @@
 // EDGE: numeric literal & boundary behavior.
 // Doc-grade: hex (0x...), decimal, char consts ('A'==65, 'ABC'==0x434241),
-// F64 (no F32). Binary 0b is supported by hcc. (hcc also tolerates '_'
-// digit separators, but that is a hosted extension, NOT HolyC, so it is
-// deliberately NOT exercised here.)
+// F64 (no F32). 0b binary literals are an hcc EXTENSION (not doc-attested
+// HolyC) -- asserted below as hcc-defined behavior, see README. '_' digit
+// separators are likewise an hcc extension and deliberately NOT exercised.
 
 // signed 64-bit boundaries (prelude consts)
 "%d\n",I64_MAX;              // 9223372036854775807
@@ -27,7 +27,7 @@
 "%X\n",0x0;                             // 0
 "%d\n",0x7FFFFFFFFFFFFFFF;              // 9223372036854775807
 
-// binary literals (0b)
+// binary literals (0b) -- hcc extension, hcc-defined
 "%d %d %d\n",0b0,0b1,0b1010;              // 0 1 10
 "%d\n",0b11111111;                       // 255
 "%X\n",0b1111000011110000;              // F0F0

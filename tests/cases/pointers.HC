@@ -24,7 +24,7 @@ U8 *vb=&v(U8 *);
 "%d %d %d\n",vb[0],vb[7],*vb;
 // postfix casts
 F64 f=3.9;
-"%d\n",f(I64);           //C-style trunc toward zero
+"%d\n",f(I64);           //doc: "TempleOS follows normal C float<-->int conversion" -> trunc
 "%d\n",(-3.9)(I64);
 I64 big=0x1FF;
 "%d %d\n",big(U8),big(I8);   //255, -1

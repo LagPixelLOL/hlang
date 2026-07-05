@@ -54,7 +54,7 @@ for (i=0;i<7;i++)
     case: "f"; break;         // 5
     default: "."; break;
   }
-'\n';                        // zo..F f... wait compute below
+'\n';                        // zo..Ff. (0->z 1->o 2,3->. 4->F 5->f 6->.)
 
 // nested sub_switch inside a normal switch
 for (i=0;i<6;i++)

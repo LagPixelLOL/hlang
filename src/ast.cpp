@@ -29,26 +29,6 @@ int64_t Type::size() const {
     return 0;
 }
 
-int64_t Type::align() const {
-    switch (kind) {
-        case Void:
-            return 1;
-        case Int:
-            return intSize;
-        case F64:
-            return 8;
-        case Ptr:
-            return 8;
-        case Func:
-            return 8;
-        case Array:
-            return elem->align();
-        case Class:
-            return cls ? cls->align : 1;
-    }
-    return 1;
-}
-
 std::string Type::str() const {
     switch (kind) {
         case Void:

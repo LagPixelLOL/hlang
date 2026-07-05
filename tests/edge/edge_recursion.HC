@@ -14,8 +14,9 @@ I64 Fib(I64 n)
 }
 "%d\n",Fib(30);              // 832040
 
-// mutual recursion (forward reference resolved by the pre-pass)
-Bool IsOdd(I64 n);
+// mutual recursion; `extern` "can be used to generate a fwd reference"
+// (scopinglinkage.md) -- the doc-attested spelling, not a C prototype
+extern Bool IsOdd(I64 n);
 Bool IsEven(I64 n)
 {
   if (!n) return TRUE;

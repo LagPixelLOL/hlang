@@ -207,7 +207,9 @@ private:
             Value* iv = convert(rv, tyI64(), false);
             v = mt == i64_ ? iv : b().CreateTrunc(iv, mt);
         }
-        b().CreateStore(v, addr);
+        // align 1: class members are packed (HolyC has no alignment padding),
+        // so scalar slots may sit at any byte offset. Never lie to LLVM.
+        b().CreateAlignedStore(v, addr, MaybeAlign(1));
     }
 
     RV loadFrom(Value* addr, const TypePtr& t, const SrcLoc& loc) {
@@ -221,7 +223,7 @@ private:
             // class rvalue: its address (lets classes pass by reference)
             return {b().CreatePtrToInt(addr, i64_), tyPtr(t)};
         }
-        Value* v = b().CreateLoad(memTy(t), addr);
+        Value* v = b().CreateAlignedLoad(memTy(t), addr, MaybeAlign(1));  // packed members
         return {widen(v, t), t->isF64() ? tyF64() : t};
     }
 
@@ -285,9 +287,13 @@ private:
                 *out = e->castType->size();
                 return true;
             case Ex::OffsetOf: {
-                auto ci = prog_.classes.find(e->className);
-                if (ci == prog_.classes.end()) return false;
-                const ClassMember* m = ci->second->findMember(e->memberName);
+                std::shared_ptr<ClassInfo> cls = e->classRef;
+                if (!cls) {
+                    auto ci = prog_.classes.find(e->className);
+                    if (ci == prog_.classes.end()) return false;
+                    cls = ci->second;
+                }
+                const ClassMember* m = cls->findMember(e->memberName);
                 if (!m) return false;
                 *out = m->offset;
                 return true;
@@ -1894,7 +1900,19 @@ CodegenResult CG::run() {
             // HolyC global vars are DupsAllowed (a dup overshadows the
             // original) -- this is what lets you re-#include a file. We keep
             // the first storage; a later dup with an initializer re-inits it.
-            if (!globals_.count(item.global->name)) declareGlobal(*item.global);
+            auto ex = globals_.find(item.global->name);
+            if (ex == globals_.end()) {
+                declareGlobal(*item.global);
+            } else if (item.global->linkage == Linkage::Normal ||
+                       item.global->linkage == Linkage::Public ||
+                       item.global->linkage == Linkage::Static) {
+                // an earlier `extern`/`import` was only a fwd reference
+                // (scopinglinkage.md); a later real definition supplies the
+                // storage it promised
+                if (auto* gv = llvm::dyn_cast<GlobalVariable>(ex->second.addr))
+                    if (gv->isDeclaration())
+                        gv->setInitializer(Constant::getNullValue(gv->getValueType()));
+            }
         }
     }
 

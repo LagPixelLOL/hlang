@@ -53,10 +53,15 @@ x>>=2; "%d\n",x;
 x|=9;  "%d\n",x;
 x&=12; "%d\n",x;
 x^=5;  "%d\n",x;
-// ++/-- pre/post
+// ++/-- pre/post, one mutation per statement. (Mixing k++ with other
+// reads of k in a single arg list would assert an evaluation order the
+// HolyC docs never promise -- that would be projecting an assumption onto
+// HolyC. See tests/edge/edge_precedence.HC.)
 I64 k=5;
-"%d %d %d %d\n",k++,k,++k,k;
-"%d %d\n",k--,--k;
+"%d ",k++; "%d\n",k;
+"%d ",++k; "%d\n",k;
+"%d ",k--; "%d\n",k;
+"%d\n",--k;
 // unary
 "%d %d %d %d\n",-x,!x,!0,~0;
 F64 f=-2.5;
