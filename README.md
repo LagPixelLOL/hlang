@@ -27,7 +27,8 @@ Hello World
 | `src/`     | the compiler: lexer+preprocessor, parser, LLVM codegen, ORC JIT, AOT driver |
 | `runtime/` | `hcrt` — the C runtime backing the stdlib (linked into `hcc` for JIT, `libhcrt.a` for AOT) |
 | `lib/`     | `HolyC.HH` — the auto-included stdlib prelude (KernelA.HH spirit) |
-| `tests/`   | golden tests (run under **both** JIT and AOT), error tests, front-end dumps |
+| `examples/`| fun, heavily-commented HolyC programs (fractals, dungeons, `#exe{}` magic) |
+| `tests/`   | golden tests (run under **JIT and AOT, at -O0 and -O2**), error tests, front-end dumps |
 
 ## Build & test
 
@@ -37,7 +38,7 @@ Requires CMake, ninja/make, a C++17 compiler and LLVM 21 dev libraries
 ```sh
 cmake -S . -B build -G Ninja
 ninja -C build
-ninja -C build check        # run the test suite (58 tests)
+ninja -C build check        # run the test suite (182 tests)
 ```
 
 `hcc` links LLVM/zstd/zlib/libstdc++ statically — the resulting binary
@@ -103,8 +104,14 @@ hcc file.HC -c file.o        AOT compile to an object file
 * **Classes**: single inheritance (`class B:A`), `union`s, typed unions
   (`public I64i union I64 {...}` — type in front is the whole-access
   type), sub-int access (`q.i32[1].u8[2]`, `i.u16[1]=0x9ABC`), member
-  arrays, multiple `pad`/`reserved` members, member meta data parsed,
-  instances declared after the class body, `sizeof`/`offset(cls.member)`
+  arrays, **packed layout** — members sit back-to-back with *no* C-style
+  alignment padding and `sizeof` is the exact byte sum (TempleOS aligns
+  by hand, which is why `pad`/`reserved` members are special-cased),
+  multiple `pad`/`reserved` members, duplicate class definitions
+  **overshadow** the earlier one (scoping table: class dups are
+  DupsAllowed — earlier instances keep the old layout), member meta data
+  parsed, instances declared after the class body,
+  `sizeof`/`offset(cls.member)`
   (one level, per spec), `lastclass` default args resolved to the
   previous argument's class name at each call site.
 * **try/catch/throw**: `throw('Ch8')` is a function with an ≤8-byte char
@@ -145,6 +152,35 @@ A local *may* overshadow a **global** of the same name (global vars are
 `DupsAllowed`), and duplicate globals overshadow rather than error (so a
 file can be re-`#include`d). Idiomatic HolyC declares a local once and
 reuses it. Shift counts follow x86 (masked to 6 bits: `1<<64 == 1`).
+`extern` on a function or global also generates a **forward reference**
+(scopinglinkage.md) — the doc-attested way to spell mutual recursion; a
+bare C-style prototype is tolerated as the same thing.
+
+### Doc-silent judgment calls (hcc-defined)
+
+Where the archived doc is silent, hcc picks the interpretation most
+consistent with the 64-bit doctrine, pins it with tests, and lists it
+here (per DEVELOPMENT.md these are *not* HolyC guarantees):
+
+* `do {} while ();` is implemented (the doc never mentions it).
+* Brace initializer lists for arrays/classes, at global and local scope;
+  partial lists zero-fill the rest. Multi-dimensional arrays, and
+  `sizeof(expr)` on arbitrary expressions.
+* `%` accepts F64 operands (one numeric tower; lowers to fmod).
+* Default args are compiled into each **call site** and re-evaluated
+  per call — genuine TempleOS behavior (`U0 GrLine(CDC *dc=gr_dc,...)`
+  defaults to the *live* global), just undocumented.
+* F64→I64 conversion truncates toward zero, following the doc's
+  "TempleOS follows normal C float<-->int conversion". (Real TempleOS
+  is often reported to round-to-nearest via CVTSD2SI; the doc's wording
+  wins here. `ToI64()` matches.)
+* Numeric-literal **extensions** (accepted by hcc, not HolyC): `0b`
+  binary literals, `_` digit separators.
+* `Print` superset: `%u`, lowercase `%x`, C-escape superset
+  (`\a \b \f \v`); unknown fmt codes pass through literally.
+* Argument/operand evaluation order is left-to-right (deterministic and
+  identical under JIT/AOT) but is **not** asserted as a HolyC guarantee
+  — the docs never promise one.
 
 ## The stdlib (`lib/HolyC.HH` + `runtime/hcrt.c`)
 
@@ -222,8 +258,10 @@ cannot (or that are deliberately out of scope):
 `tests/run_tests.sh` (also `ninja -C build check`) runs:
 
 * **golden tests** in `tests/cases/` — each `.HC` runs under **JIT and
-  AOT** and must byte-match its `.out` (per-mode `.jit.out`/`.aot.out`
-  for `#ifjit`/`#ifaot`); stdin fixtures via `.in`;
+  AOT, each at both -O0 and -O2** (four runs), and every run must
+  byte-match the same `.out` (per-mode `.jit.out`/`.aot.out` for
+  `#ifjit`/`#ifaot`); stdin fixtures via `.in`. Optimization must never
+  change observable behavior, and the suite enforces it;
 * **error tests** in `tests/errors/` — must fail with the message named
   in their `//ERR:` header;
 * **edge cases** in `tests/edge/` — common *and* uncommon patterns,
@@ -231,6 +269,8 @@ cannot (or that are deliberately out of scope):
   error test (must be rejected cleanly with that diagnostic, never crash);
   any other file is a golden test run under **both JIT and AOT**. ctest
   auto-classifies each file;
+* **anti-C tests** in `tests/anti_c/` — same auto-classification as
+  `tests/edge/`; see below;
 * **front-end goldens** in `tests/frontend/` — `--dump-tokens` /
   `--dump-ast` output.
 
@@ -238,7 +278,10 @@ The cases include the doc's examples verbatim (widening, `NullCase`,
 `SubSwitch`, `SubIntAccess`, hello-world variants) plus systematic
 coverage of precedence, chaining, defaults/skipped args, varargs,
 classes, exceptions, sub-int access, pointers, the preprocessor, `#exe`,
-strings/memory/math, and I/O.
+strings/memory/math, time/files, and I/O — every function the prelude
+exposes is exercised by at least one golden (which, since goldens run
+under JIT and AOT, also proves each runtime symbol is wired into both
+the JIT symbol map and `libhcrt.a`).
 
 The **edge** category stress-tests corners: integer overflow/wraparound
 and 64-bit widening boundaries, x86 shift-count masking (`1<<64==1`),
@@ -247,11 +290,20 @@ pointer aliasing / linked lists, switch extremes (ranges, sub_switch,
 null cases, fallthrough), string escapes / embedded nulls / 8-char
 consts / format edges, deep inheritance / union punning / nested member
 chains, goto spaghetti / do-while-once, defaults / skipped / empty
-varargs / fn-ptr arrays, numeric boundaries — plus 12 broken programs
+varargs / fn-ptr arrays, numeric boundaries — plus 11 broken programs
 that must each be rejected with a clear diagnostic and no crash. Each
 edge test's asserted behavior is checked against the HolyC docs (not C):
 genuinely-unspecified corners (e.g. evaluation order) are labeled
 hcc-defined rather than presented as HolyC guarantees.
+
+The **anti_c** category exists because the most dangerous bugs in a
+HolyC compiler are C habits: each test guards a place where C semantics
+would be *wrong* — packed class layout with hand-`pad`ding (no C ABI
+padding, ever), duplicate class definitions overshadowing (no
+one-definition rule), `%` on F64 (C forbids it), default args evaluated
+at the call site (C has none), and `extern` forward references (not C
+prototypes). When an audit finds a projected C-ism, the fix lands
+together with a new `anti_c` test.
 
 ## Contributing
 

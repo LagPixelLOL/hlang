@@ -29,9 +29,10 @@ language behavior:
 
 ### 2. Two backends, one behavior
 
-Every observable behavior must be identical under JIT and AOT. That is
-why the test runner executes every golden test in **both** modes and
-diffs against the same file. The only permitted divergence is
+Every observable behavior must be identical under JIT and AOT — and at
+every optimization level. That is why the test runner executes every
+golden test in **both** modes, at **-O0 and -O2**, and diffs all four
+runs against the same file. The only permitted divergence is
 `#ifjit`/`#ifaot` (which exists precisely to express that divergence in
 user code) — tested with per-mode goldens (`.jit.out`/`.aot.out`).
 
@@ -93,8 +94,11 @@ Deliberate simplifications that keep the compiler small and correct:
   diagnostics instead.
 * Prefer a boring lowering (setjmp frames for try/catch, a select-var
   dispatch for sub_switch porches) over a clever one. LLVM's optimizer
-  exists; correctness at `-O0` comes first (and `-O2` must not change
-  observable behavior — spot-checked in review, keep it that way).
+  exists; correctness at `-O0` comes first — and `-O2` must not change
+  observable behavior: the test suite runs every golden under JIT and
+  AOT at both `-O0` and `-O2` against the same expected bytes. Never
+  lie to LLVM (alignment, aliasing) "because it works at -O0" — the
+  `-O2` runs exist to catch exactly that.
 
 ### 6. Errors speak HolyC
 
@@ -122,8 +126,13 @@ worth an `//ERR:` test in `tests/errors/`.
   hcc-defined. Places where HolyC genuinely differs from C must win:
   local vars are `NoDups`/function-scope (no block shadowing), globals
   overshadow, shifts mask the count to 6 bits (x86), assignment yields
-  the *untruncated* RHS, pointers are unscaled I64s. The `tests/edge/`
-  suite exists to pin these down; extend it, don't dilute it.
+  the *untruncated* RHS, pointers are unscaled I64s, classes are
+  **packed** (no C ABI padding — TempleOS pads by hand with `pad`
+  members), duplicate class definitions **overshadow** (no ODR). The
+  `tests/edge/` suite pins the corners; `tests/anti_c/` exists purely to
+  assert HolyC-vs-C divergences. When an audit finds a projected C-ism,
+  fix it and land a new `anti_c` test in the same commit; extend both
+  suites, don't dilute them.
 * **Every bug fix gets a test** in the same commit. No exceptions —
   regressions in a compiler are silent and brutal.
 * **Formatting**: `clang-format -i src/*.cpp src/*.hpp` (4-space indent,
