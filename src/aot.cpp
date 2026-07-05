@@ -40,7 +40,9 @@ void optimizeModule(llvm::Module& m, int level) {
 bool emitObjectFile(llvm::Module& m, const std::string& path) {
     InitializeNativeTarget();
     InitializeNativeTargetAsmPrinter();
-    InitializeNativeTargetAsmParser();
+    // no InitializeNativeTargetAsmParser(): hcc rejects asm{} blocks and
+    // emits no module-level inline asm, so the MC asm parser (and its
+    // static-initializer cost) stays out of the binary
 
     std::string triple = sys::getDefaultTargetTriple();
     std::string err;

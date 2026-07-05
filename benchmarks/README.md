@@ -31,6 +31,24 @@ time — because parallelism poisons benchmark numbers.
   * `cc` — the pre-built C binary.
   * `aot/cc` — the ratio that answers "how far from C is hcc's codegen?"
 
+## Why the jit column is so much bigger than aot
+
+The jit number carries a fixed latency the kernel never sees, measured
+(on the reference box) as roughly:
+
+| cost | ~ms | what it is |
+|---|---|---|
+| process startup | 90 | **static initializers in the statically-linked LLVM** — an empty `main()` linking the same components pays the same; the dynamic loader itself is ~3 ms. Not removable without rebuilding LLVM |
+| front end | 25 | lex+parse+codegen of the prelude + program |
+| `-O3` IR pipeline | 75 | `buildPerModuleDefaultPipeline(O3)` over the module (AOT pays this too, but off the clock) |
+| ORC materialization | 60 | instruction selection/relocation of every function at lookup time |
+
+So `hcc file.HC` answers "how fast is the edit-run cycle?" (~200-350 ms
+to compile *and* run a kernel at -O3 — TempleOS-grade interactivity),
+while `hcc-aot` vs `cc` is the honest codegen-quality comparison.
+Compiler-side codegen quality work should watch the `aot/cc` column;
+edit-cycle work should watch `jit` minus the kernel's own runtime.
+
 ## Kernels
 
 | kernel | pattern |

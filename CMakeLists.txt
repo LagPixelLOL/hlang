@@ -42,7 +42,7 @@ target_compile_options(hcc PRIVATE -fno-exceptions -fno-rtti -Wall -Wextra -Wno-
 
 llvm_map_components_to_libnames(LLVM_LIBS
   core orcjit native nativecodegen passes support target
-  x86asmparser x86codegen
+  x86codegen
 )
 target_link_libraries(hcc PRIVATE ${LLVM_LIBS} hcrt)
 # Self-contained binary: static LLVM (component archives), static

@@ -28,7 +28,9 @@ static void initTargets() {
     if (done) return;
     InitializeNativeTarget();
     InitializeNativeTargetAsmPrinter();
-    InitializeNativeTargetAsmParser();
+    // no InitializeNativeTargetAsmParser(): hcc rejects asm{} blocks and
+    // emits no module-level inline asm, so the MC asm parser (and its
+    // static-initializer cost) stays out of the binary
     done = true;
 }
 
