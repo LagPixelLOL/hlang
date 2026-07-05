@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "lexer.hpp"
+#include "parser.hpp"
 
 namespace hc {
 int compileMain(int argc, char** argv);  // implemented as we go
@@ -67,16 +68,25 @@ static int dumpTokens(const std::string& path) {
     return lx.hadError() ? 1 : 0;
 }
 
+static int dumpAst(const std::string& path) {
+    hc::Lexer lx(path, /*jitMode=*/true, {});
+    hc::Parser parser(lx);
+    auto prog = parser.parseProgram();
+    fputs(hc::dumpProgram(*prog).c_str(), stdout);
+    return parser.hadError() ? 1 : 0;
+}
+
 int main(int argc, char** argv) {
     if (argc < 2) {
         usage();
         return 2;
     }
-    // token-dump fast path (lexer testing)
+    // token/ast-dump fast paths (front-end testing)
     for (int i = 1; i < argc; i++) {
-        if (!strcmp(argv[i], "--dump-tokens")) {
+        if (!strcmp(argv[i], "--dump-tokens") || !strcmp(argv[i], "--dump-ast")) {
+            bool ast = !strcmp(argv[i], "--dump-ast");
             for (int j = 1; j < argc; j++)
-                if (argv[j][0] != '-') return dumpTokens(argv[j]);
+                if (argv[j][0] != '-') return ast ? dumpAst(argv[j]) : dumpTokens(argv[j]);
             usage();
             return 2;
         }
