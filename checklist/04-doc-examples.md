@@ -1,4 +1,4 @@
-# Checklist: the doc's example programs (`holyc-docs/HC/*.HC`, `helloworld.HC`)
+# Checklist: the doc's example programs ([holyc-docs/HC](https://github.com/SpaciousCoder78/holyc-docs/tree/main/HC)`/*.HC`, [helloworld.HC](https://github.com/SpaciousCoder78/holyc-docs/blob/main/helloworld.HC))
 
 DEVELOPMENT.md rule #1: doc examples with expected output are contract
 tests. This file records, per shipped example, whether it runs

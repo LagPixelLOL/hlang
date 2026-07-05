@@ -1,4 +1,4 @@
-# Checklist: scoping & linkage (`CompilerOverview/scopinglinkage.md`)
+# Checklist: scoping & linkage ([CompilerOverview/scopinglinkage.md](https://github.com/SpaciousCoder78/holyc-docs/blob/main/CompilerOverview/scopinglinkage.md))
 
 The scoping doc has two parts: prose about the JIT symbol model and
 `extern`/`import`/`_extern`/`_import`, then the AOT/JIT scoping tables.

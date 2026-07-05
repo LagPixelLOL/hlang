@@ -1,9 +1,9 @@
 # Source-of-truth conformance checklist
 
 Item-by-item audit of `hcc` against the HolyC source-of-truth documents
-in `../holyc-docs` (the archive of `templeos.holyc.xyz/Wb/Doc/HolyC.html`
-plus the CompilerOverview pages). Every claim the docs make is listed
-with three answers:
+in [holyc-docs](https://github.com/SpaciousCoder78/holyc-docs) — the archive
+of `templeos.holyc.xyz/Wb/Doc/HolyC.html` plus the CompilerOverview
+pages. Every claim the docs make is listed with three answers:
 
 * **Implemented** — does hcc do it? (`yes` / `partial` / `no (documented)`)
 * **Tested** — which test pins it. *probe* means it was verified by
@@ -15,10 +15,10 @@ with three answers:
 
 | file | source document |
 |---|---|
-| [01-holyc-language.md](01-holyc-language.md) | `holyc-docs/README.md` (the main HolyC doc) |
-| [02-scoping-linkage.md](02-scoping-linkage.md) | `CompilerOverview/scopinglinkage.md` |
-| [03-preprocessor-directives-options.md](03-preprocessor-directives-options.md) | `CompilerOverview/{preprocessor,directives,options}.md` |
-| [04-doc-examples.md](04-doc-examples.md) | `HC/*.HC` + `helloworld.HC` example programs |
+| [01-holyc-language.md](01-holyc-language.md) | [holyc-docs/README.md](https://github.com/SpaciousCoder78/holyc-docs/blob/main/README.md) (the main HolyC doc) |
+| [02-scoping-linkage.md](02-scoping-linkage.md) | [CompilerOverview/scopinglinkage.md](https://github.com/SpaciousCoder78/holyc-docs/blob/main/CompilerOverview/scopinglinkage.md) |
+| [03-preprocessor-directives-options.md](03-preprocessor-directives-options.md) | [CompilerOverview](https://github.com/SpaciousCoder78/holyc-docs/tree/main/CompilerOverview)`/{preprocessor,directives,options}.md` |
+| [04-doc-examples.md](04-doc-examples.md) | [HC/](https://github.com/SpaciousCoder78/holyc-docs/tree/main/HC)`*.HC` + [helloworld.HC](https://github.com/SpaciousCoder78/holyc-docs/blob/main/helloworld.HC) example programs |
 
 ## Summary (as of this audit)
 

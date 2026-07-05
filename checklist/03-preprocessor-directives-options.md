@@ -1,4 +1,4 @@
-# Checklist: preprocessor, directives, options (`CompilerOverview/{preprocessor,directives,options}.md`)
+# Checklist: preprocessor, directives, options ([CompilerOverview](https://github.com/SpaciousCoder78/holyc-docs/tree/main/CompilerOverview)`/{preprocessor,directives,options}.md`)
 
 ## preprocessor.md
 

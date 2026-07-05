@@ -5,7 +5,8 @@ An LLVM front end for Terry A. Davis' **HolyC**, with both **JIT execution**
 plus a minimal stdlib in the spirit of the TempleOS kernel library.
 
 The language implementation follows the archived HolyC documentation
-(`holyc-docs`, an archive of `templeos.holyc.xyz/Wb/Doc/HolyC.html`); the
+([holyc-docs](https://github.com/SpaciousCoder78/holyc-docs), an archive of
+`templeos.holyc.xyz/Wb/Doc/HolyC.html`); the
 doc's example programs (`NullCase.HC`, `SubSwitch.HC`, `SubIntAccess.HC`,
 `Exceptions.HC`, the hello-world variants) run unmodified.
 

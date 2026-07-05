@@ -1,4 +1,4 @@
-# Checklist: the HolyC language doc (`holyc-docs/README.md`)
+# Checklist: the HolyC language doc ([holyc-docs/README.md](https://github.com/SpaciousCoder78/holyc-docs/blob/main/README.md))
 
 Entries follow the doc's own order. "Tested" names files under `tests/`
 unless marked *probe* (verified by running hcc during the audit, with

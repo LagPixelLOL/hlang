@@ -7,9 +7,11 @@ or "fixing" behavior that looks wrong.
 
 ### 1. The spec is the docs, and the docs are Terry's
 
-The language definition lives in `../holyc-docs` (an archive of the
-TempleOS HolyC documentation). It is the **single source of truth** for
-language behavior:
+The language definition lives in
+[holyc-docs](https://github.com/SpaciousCoder78/holyc-docs) — an archive of the
+TempleOS HolyC documentation (clone it next to this repo as
+`../holyc-docs` for local reference). It is the **single source of
+truth** for language behavior:
 
 * If the doc gives an example with expected output (the 64-bit widening
   block, `NullCase.HC`, `SubSwitch.HC`, `SubIntAccess.HC`, the
