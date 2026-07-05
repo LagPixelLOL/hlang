@@ -29,6 +29,10 @@ for hc in "$HERE"/edge/*.HC; do
     [ -e "$hc" ] || continue
     if grep -q '^//ERR:' "$hc"; then run error "$hc"; else run jit "$hc"; run aot "$hc"; fi
 done
+for hc in "$HERE"/anti_c/*.HC; do
+    [ -e "$hc" ] || continue
+    if grep -q '^//ERR:' "$hc"; then run error "$hc"; else run jit "$hc"; run aot "$hc"; fi
+done
 
 echo
 if [ "$fail" -eq 0 ]; then

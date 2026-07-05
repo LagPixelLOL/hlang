@@ -81,6 +81,7 @@ file(GLOB CASE_TESTS  CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/tests/cases/*.HC)
 file(GLOB ERROR_TESTS CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/tests/errors/*.HC)
 file(GLOB FE_TESTS    CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/tests/frontend/*.HC)
 file(GLOB EDGE_TESTS  CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/tests/edge/*.HC)
+file(GLOB ANTIC_TESTS CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/tests/anti_c/*.HC)
 
 foreach(hc ${CASE_TESTS})
   get_filename_component(name ${hc} NAME_WE)
@@ -112,6 +113,20 @@ foreach(hc ${EDGE_TESTS})
   else()
     hc_add_test(edge.${name}.jit jit ${hc})
     hc_add_test(edge.${name}.aot aot ${hc})
+  endif()
+endforeach()
+# anti_c: tests that explicitly guard against projecting C semantics onto
+# HolyC (packed classes, dup-class overshadow, F64 %, call-site defaults,
+# extern fwd refs, ...). Same auto-classification as tests/edge/.
+foreach(hc ${ANTIC_TESTS})
+  get_filename_component(name ${hc} NAME_WE)
+  file(READ ${hc} _ac_src)
+  string(FIND "${_ac_src}" "//ERR:" _ac_err)
+  if(_ac_err GREATER -1)
+    hc_add_test(anti_c.${name} error ${hc})
+  else()
+    hc_add_test(anti_c.${name}.jit jit ${hc})
+    hc_add_test(anti_c.${name}.aot aot ${hc})
   endif()
 endforeach()
 
