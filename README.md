@@ -136,6 +136,16 @@ Pointers are just I64s ("all values are extended to 64-bit"): `+ - += -=
 *does* scale by the element size. Cast to step: `q=_d+ml->offset;` and
 `b=arr(U8 *); b++;` are the idiomatic forms, exactly like TempleOS code.
 
+### Scoping (not C!)
+
+Per the spec's scoping table, **local vars are function-scope + `NoDups`**:
+unlike C there is *no* block-level shadowing — declaring the same local
+name twice in a function is an error (`I64 x; { I64 x; }` is rejected).
+A local *may* overshadow a **global** of the same name (global vars are
+`DupsAllowed`), and duplicate globals overshadow rather than error (so a
+file can be re-`#include`d). Idiomatic HolyC declares a local once and
+reuses it. Shift counts follow x86 (masked to 6 bits: `1<<64 == 1`).
+
 ## The stdlib (`lib/HolyC.HH` + `runtime/hcrt.c`)
 
 Minimal but faithful to TempleOS names and behaviors:

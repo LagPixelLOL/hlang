@@ -96,6 +96,7 @@ private:
         std::unique_ptr<IRBuilder<>> b;
         Instruction* allocaMarker = nullptr;  // insert allocas before this
         std::vector<std::map<std::string, VarSym>> scopes;
+        std::set<std::string> localNames;  // every local declared (HolyC: NoDups)
         std::map<std::string, BasicBlock*> labels;
         std::set<std::string> labelsDefined;
         std::vector<BreakTarget> breaks;
@@ -1577,6 +1578,18 @@ private:
         return t;
     }
 
+    // HolyC local vars are NoDups (scoping table): a second declaration of
+    // the same local name in a function is an error. Registers the binding.
+    bool declareLocal(const std::string& name, VarSym sym, const SrcLoc& loc) {
+        if (!fc_->localNames.insert(name).second) {
+            error(loc, "duplicate local variable '" + name +
+                           "' (HolyC local vars are NoDups; pick another name)");
+            return false;
+        }
+        fc_->scopes.back()[name] = sym;
+        return true;
+    }
+
     void genVarDecl(const Stmt* s) {
         for (const VarDeclarator& d : s->decls) {
             if (s->isStatic) {
@@ -1585,7 +1598,7 @@ private:
             }
             TypePtr vt = regSlotType(d.type);
             AllocaInst* a = entryAlloca(memTy(vt), d.name);
-            fc_->scopes.back()[d.name] = {a, vt};
+            declareLocal(d.name, {a, vt}, d.loc);
             if (d.init) genInit(a, vt, d.init.get());
         }
     }
@@ -1602,7 +1615,7 @@ private:
         auto* g = new GlobalVariable(*mod_, memTy(d.type), false, GlobalValue::InternalLinkage,
                                      init, fc_->fn->getName() + "." + d.name);
         g->setAlignment(Align(8));
-        fc_->scopes.back()[d.name] = {g, d.type};
+        declareLocal(d.name, {g, d.type}, d.loc);
     }
 
     void genInit(Value* addr, const TypePtr& t, const Expr* init) {
@@ -1813,7 +1826,7 @@ private:
             AllocaInst* a = entryAlloca(memTy(pt), nm + ".addr");
             RV rv{arg, pt->isF64() ? tyF64() : tyI64()};
             storeTo(a, rv, pt);
-            if (!p.name.empty()) fc_->scopes.back()[p.name] = {a, pt};
+            if (!p.name.empty()) declareLocal(p.name, {a, pt}, p.loc);
         }
         if (fd.type->variadic) {
             // 'I64 argc' and 'I64 argv[]' builtins
@@ -1825,6 +1838,8 @@ private:
             AllocaInst* av = entryAlloca(i64_, "argv.addr");
             b().CreateStore(argcA, ac);
             b().CreateStore(argvA, av);
+            fc_->localNames.insert("argc");
+            fc_->localNames.insert("argv");
             fc_->scopes.back()["argc"] = {ac, tyI64()};
             fc_->scopes.back()["argv"] = {av, tyPtr(tyI64())};
         }
@@ -1876,10 +1891,10 @@ CodegenResult CG::run() {
             // bind the first occurrence; later dups rebind during the walk
             if (!funcs_.count(fd.name)) funcs_[fd.name] = {f, fd.type, &fd};
         } else if (item.global) {
-            if (!globals_.count(item.global->name))
-                declareGlobal(*item.global);
-            else if (item.global->linkage == Linkage::Normal)
-                error(item.global->loc, "duplicate global '" + item.global->name + "'");
+            // HolyC global vars are DupsAllowed (a dup overshadows the
+            // original) -- this is what lets you re-#include a file. We keep
+            // the first storage; a later dup with an initializer re-inits it.
+            if (!globals_.count(item.global->name)) declareGlobal(*item.global);
         }
     }
 
