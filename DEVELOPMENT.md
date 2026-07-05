@@ -124,7 +124,11 @@ worth an `//ERR:` test in `tests/errors/`.
 ## Practical rules
 
 * **Commit in reviewable increments** — one subsystem or behavior per
-  commit, tests green at every commit (`ninja -C build check`). The
+  commit, tests green at every commit (`ninja -C build check`).
+  Benchmarks (`ninja -C build bench` / `benchmarks/run_benchmarks.sh`)
+  are *not* part of check and never gate a commit; unlike the test
+  suite (which ctest runs multithreaded), they always run sequentially
+  — timing needs a quiet machine, correctness doesn't. The
   history of this repo (skeleton → lexer → parser → runtime → codegen →
   tests → hardening) is the intended template.
 * **Test-first for behavior questions.** When unsure what some HolyC
@@ -148,10 +152,12 @@ worth an `//ERR:` test in `tests/errors/`.
   suites, don't dilute them.
 * **Every bug fix gets a test** in the same commit. No exceptions —
   regressions in a compiler are silent and brutal.
-* **Formatting**: `clang-format -i src/*.cpp src/*.hpp` (4-space indent,
-  left-aligned pointers, config in `.clang-format`). C runtime follows
-  the same style; HolyC code in `lib/`/`tests/` follows TempleOS style
-  (2-space, `U0 Fun()` braces on their own line, terse).
+* **Formatting**: `clang-format -i src/*.cpp src/*.hpp runtime/*.c
+  runtime/*.h benchmarks/*.c` (4-space indent, left-aligned pointers,
+  config in `.clang-format`) — ALL C/C++ in the repo, not just the
+  compiler. HolyC code in `lib/`/`tests/`/`examples/`/`benchmarks/`
+  follows TempleOS style (2-space, `U0 Fun()` braces on their own line,
+  terse).
 * **New source files** are picked up by the CMake glob; keep compiler
   code exception-free (`-fno-exceptions -fno-rtti`) and use
   `Expected`/error returns, LLVM-style.
@@ -174,6 +180,7 @@ worth an `//ERR:` test in `tests/errors/`.
 | stdlib HolyC surface + reference doc | `lib/HolyC.HH`, `lib/README.md` |
 | test runner + suites | `tests/` |
 | per-claim doc-conformance record (implemented/tested/deviations) | `checklist/` |
+| HolyC-vs-C performance kernels (opt-in, sequential) | `benchmarks/` |
 | the two normative deviation lists (limitations, judgment calls) | `DEVIATIONS.md` |
 | commented example programs | `examples/` |
 

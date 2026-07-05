@@ -30,6 +30,7 @@ Hello World
 | `lib/`     | `HolyC.HH` — the auto-included stdlib prelude (KernelA.HH spirit) + the stdlib reference doc |
 | `examples/`| fun, heavily-commented HolyC programs (fractals, dungeons, `#exe{}` magic) |
 | `checklist/`| per-claim conformance audit against the HolyC docs (implemented / tested / deviations) |
+| `benchmarks/`| HolyC-vs-C paired compute kernels (opt-in `ninja bench`, never part of `check`) |
 | `tests/`   | golden tests (run under **JIT and AOT, at -O0 and -O2**), error tests, front-end dumps |
 
 ## Build & test
@@ -173,6 +174,16 @@ one-definition rule), `%` on F64 (C forbids it), default args evaluated
 at the call site (C has none), and `extern` forward references (not C
 prototypes). When an audit finds a projected C-ism, the fix lands
 together with a new `anti_c` test.
+
+## Benchmarks
+
+`benchmarks/` pairs each `NAME.HC` with an algorithm-identical `NAME.c`
+(fib, sieve, matmul, hash, sort, mandel) and times `hcc -O3` against
+`cc -O3`, with a byte-exact checksum gate before any timing. Run it
+with `ninja -C build bench` (or `benchmarks/run_benchmarks.sh`). It is
+**not** part of the test suite and — unlike the multithreaded ctest run
+— always executes sequentially; see
+[benchmarks/README.md](benchmarks/README.md).
 
 ## Contributing
 

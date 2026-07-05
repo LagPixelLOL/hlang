@@ -147,3 +147,13 @@ add_custom_target(check
   DEPENDS hcc prelude
   WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
   USES_TERMINAL)
+
+# `ninja bench` runs the HolyC-vs-C benchmark suite. Deliberately NOT part
+# of `check` (or anything default), and deliberately NOT parallel: it is
+# performance measurement -- one process at a time, both sides at -O3.
+add_custom_target(bench
+  COMMAND ${CMAKE_COMMAND} -E env HCC=$<TARGET_FILE:hcc>
+          sh ${CMAKE_SOURCE_DIR}/benchmarks/run_benchmarks.sh
+  DEPENDS hcc prelude
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+  USES_TERMINAL)
