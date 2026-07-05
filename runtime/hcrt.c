@@ -94,7 +94,9 @@ int64_t HC_MemCmp(void* a, void* b, int64_t n) { return memcmp(a, b, (size_t)n);
 int64_t HC_StrLen(char* s) { return s ? (int64_t)strlen(s) : 0; }
 char* HC_StrCpy(char* dst, char* src) { return strcpy(dst, src ? src : ""); }
 int64_t HC_StrCmp(char* a, char* b) { return strcmp(a ? a : "", b ? b : ""); }
-int64_t HC_StrNCmp(char* a, char* b, int64_t n) { return strncmp(a ? a : "", b ? b : "", (size_t)n); }
+int64_t HC_StrNCmp(char* a, char* b, int64_t n) {
+    return strncmp(a ? a : "", b ? b : "", (size_t)n);
+}
 char* HC_StrFind(char* needle, char* haystack) {
     if (!needle || !haystack) return NULL;
     return strstr(haystack, needle);
@@ -109,9 +111,7 @@ char* HC_StrNew(char* s) {
     return p;
 }
 
-int64_t HC_Str2I64(char* s, int64_t radix) {
-    return s ? (int64_t)strtoll(s, NULL, (int)radix) : 0;
-}
+int64_t HC_Str2I64(char* s, int64_t radix) { return s ? (int64_t)strtoll(s, NULL, (int)radix) : 0; }
 double HC_Str2F64(char* s) { return s ? strtod(s, NULL) : 0.0; }
 
 /* ============================================================ formatting */
@@ -219,8 +219,8 @@ static void fmt_date(HCOut* o, int64_t cdate, int time_part) {
     uint64_t d = doy - (153 * mp + 2) / 5 + 1;
     uint64_t m = mp < 10 ? mp + 3 : mp - 9;
     if (m <= 2) y++;
-    snprintf(tmp, sizeof tmp, "%02llu/%02llu/%04lld", (unsigned long long)m,
-             (unsigned long long)d, (long long)y);
+    snprintf(tmp, sizeof tmp, "%02llu/%02llu/%04lld", (unsigned long long)m, (unsigned long long)d,
+             (long long)y);
     out_emit(o, tmp, strlen(tmp));
 }
 
@@ -241,11 +241,16 @@ static void hc_format(HCOut* o, const char* fmt, int64_t argc, const int64_t* ar
         }
         int left = 0, zero = 0, commas = 0, plus = 0;
         for (;; p++) {
-            if (*p == '-') left = 1;
-            else if (*p == '0') zero = 1;
-            else if (*p == ',') commas = 1;
-            else if (*p == '+') plus = 1;
-            else break;
+            if (*p == '-')
+                left = 1;
+            else if (*p == '0')
+                zero = 1;
+            else if (*p == ',')
+                commas = 1;
+            else if (*p == '+')
+                plus = 1;
+            else
+                break;
         }
         int width = 0, prec = -1;
         while (*p >= '0' && *p <= '9') width = width * 10 + (*p++ - '0');
@@ -592,8 +597,7 @@ int64_t HC_Now(void) {
     clock_gettime(CLOCK_REALTIME, &ts);
     int64_t days = ts.tv_sec / 86400 + 719528; /* days since 1/1/0 */
     int64_t secs = ts.tv_sec % 86400;
-    uint64_t frac =
-        (uint64_t)(((double)secs + (double)ts.tv_nsec * 1e-9) * 4294967296.0 / 86400.0);
+    uint64_t frac = (uint64_t)(((double)secs + (double)ts.tv_nsec * 1e-9) * 4294967296.0 / 86400.0);
     return (days << 32) | (int64_t)(frac & 0xFFFFFFFF);
 }
 
