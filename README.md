@@ -26,7 +26,7 @@ Hello World
 |------------|-------------------------------------------------------------|
 | `src/`     | the compiler: lexer+preprocessor, parser, LLVM codegen, ORC JIT, AOT driver |
 | `runtime/` | `hcrt` — the C runtime backing the stdlib (linked into `hcc` for JIT, `libhcrt.a` for AOT) |
-| `lib/`     | `HolyC.HH` — the auto-included stdlib prelude (KernelA.HH spirit) |
+| `lib/`     | `HolyC.HH` — the auto-included stdlib prelude (KernelA.HH spirit) + the stdlib reference doc |
 | `examples/`| fun, heavily-commented HolyC programs (fractals, dungeons, `#exe{}` magic) |
 | `checklist/`| per-claim conformance audit against the HolyC docs (implemented / tested / deviations) |
 | `tests/`   | golden tests (run under **JIT and AOT, at -O0 and -O2**), error tests, front-end dumps |
@@ -134,36 +134,17 @@ here (per DEVELOPMENT.md these are *not* HolyC guarantees):
   identical under JIT/AOT) but is **not** asserted as a HolyC guarantee
   — the docs never promise one.
 
-## The stdlib (`lib/HolyC.HH` + `runtime/hcrt.c`)
+## The stdlib
 
-Minimal but faithful to TempleOS names and behaviors:
-
-* **Output**: `Print` (TempleOS fmt codes: `%d %u %x %X %c` (packed
-  chars) `%s %q/%Q %f %e %g %p/%P %z` (indexed `\0`-list) `%D %T`
-  (CDate), flags `-`/`0`/`,`(grouping)/`+`, width/precision),
-  `PutChars`, `PutChar`, `PutS`, `StrPrint`, `MStrPrint`, `CatPrint`,
-  `StrPrintJoin`.
-* **Input**: `GetStr` (MAlloc'ed line), `GetChar`, `GetI64(msg,dft,min,
-  max)`, `GetF64`, `YorN`, `PressAKey`.
-* **Memory**: `MAlloc`, `CAlloc`, `MAllocIdent`, `Free` (NULL ok!),
-  `MSize`, `MemCpy`, `MemSet`, `MemCmp`.
-* **Strings**: `StrLen StrCpy StrNew StrCmp StrNCmp StrICmp StrFind
-  Str2I64 Str2F64` (+ HolyC-implemented `ToUpper ToLower StrOcc SwapI64
-  ClampI64`).
-* **Math**: `Abs Sqrt Sin Cos Tan ASin ACos ATan Arg Ln Log2 Log10 Exp
-  Pow Floor Ceil Round Trunc AbsI64 MinI64 MaxI64 SignI64 SqrI64`, and
-  `pi`/`log2_10`/`log10_2`/`loge_2` consts.
-* **Random/bits**: `Seed RandU64 RandI64 RandU32 RandU16`,
-  `Bt Bts Btr Btc BCnt`.
-* **Time/system**: `tS` (seconds), `Now` (CDate, days since 1/1/0),
-  `Sleep(mS)`, `Exit`, `Call(addr)`, `FileRead`/`FileWrite`
-  (MAlloc'ed buffers), and hosted extras `ArgCnt`/`ArgStr`.
-* **Exceptions**: `throw`, `PutExcept`, `Fs` (a `CTask*` with
-  `except_ch`, `catch_except`, `except_callers`, `task_name`).
-
+Minimal but faithful to TempleOS names and behaviors — `Print` with the
+TempleOS fmt codes, `PutChars`, `GetStr`/`GetI64`/`YorN`, `MAlloc`/
+`Free` (NULL ok!)/`MSize`, `Str*`, the math library, `Seed`/`Rand*`,
+`Bt`/`Bts`/`Btr`/`Btc`/`BCnt`, `tS`/`Now`/`Sleep`, `FileRead`/
+`FileWrite`, `throw`/`PutExcept`/`Fs`, and `StreamPrint` for `#exe {}`.
 Runtime symbols live in `hcrt` under `HC_*` names; the prelude binds
 them to their HolyC names with `_extern`, exactly how TempleOS binds C
-to asm.
+to asm. **The full reference — every signature, default arg, fmt code
+and deviation — is [lib/README.md](lib/README.md).**
 
 ## Documented limitations
 
