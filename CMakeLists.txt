@@ -8,11 +8,18 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 # Ubuntu's libzstd-dev has no CMake package, but LLVM's exports reference
-# zstd::libzstd_shared; provide the imported target ourselves.
+# zstd::libzstd_shared; provide the imported target ourselves. Prefer the
+# static archive so hcc stays self-contained.
+set(ZLIB_USE_STATIC_LIBS ON)  # prefer libz.a for a self-contained hcc
+find_library(ZSTD_STATIC libzstd.a)
 find_library(ZSTD_LIB zstd REQUIRED)
 if(NOT TARGET zstd::libzstd_shared)
-  add_library(zstd::libzstd_shared SHARED IMPORTED)
-  set_target_properties(zstd::libzstd_shared PROPERTIES IMPORTED_LOCATION "${ZSTD_LIB}")
+  add_library(zstd::libzstd_shared STATIC IMPORTED)
+  if(ZSTD_STATIC)
+    set_target_properties(zstd::libzstd_shared PROPERTIES IMPORTED_LOCATION "${ZSTD_STATIC}")
+  else()
+    set_target_properties(zstd::libzstd_shared PROPERTIES IMPORTED_LOCATION "${ZSTD_LIB}")
+  endif()
 endif()
 
 find_package(LLVM REQUIRED CONFIG HINTS /usr/lib/llvm-21/lib/cmake/llvm)
@@ -38,6 +45,13 @@ llvm_map_components_to_libnames(LLVM_LIBS
   x86asmparser x86codegen
 )
 target_link_libraries(hcc PRIVATE ${LLVM_LIBS} hcrt)
+# Self-contained binary: static LLVM (component archives), static
+# libstdc++/libgcc, static zlib if available.
+target_link_options(hcc PRIVATE -static-libstdc++ -static-libgcc)
+find_library(Z_STATIC libz.a)
+if(Z_STATIC)
+  target_link_libraries(hcc PRIVATE ${Z_STATIC})
+endif()
 
 # Export the runtime archive next to hcc so AOT links can find it.
 add_custom_command(TARGET hcc POST_BUILD
@@ -46,8 +60,9 @@ add_custom_command(TARGET hcc POST_BUILD
 # Embed lib/ (HolyC prelude) path for development; hcc also searches
 # relative to its own binary for installed/self-contained use.
 target_compile_definitions(hcc PRIVATE HCC_DEV_LIB_DIR="${CMAKE_SOURCE_DIR}/lib")
-add_custom_command(TARGET hcc POST_BUILD
-  COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/lib $<TARGET_FILE_DIR:hcc>/lib)
+add_custom_target(prelude ALL
+  COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/lib ${CMAKE_BINARY_DIR}/lib
+  COMMENT "Syncing HolyC prelude")
 
 # ---- tests ----
 enable_testing()

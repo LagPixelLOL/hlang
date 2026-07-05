@@ -181,3 +181,25 @@ I64 ClampI64(I64 num,I64 lo,I64 hi)
   if (num>hi) return hi;
   return num;
 }
+
+// ------------------------------------------------------------ options
+// TempleOS compiler options; accepted as no-ops in hcc.
+#define OPTf_ECHO                 0
+#define OPTf_TRACE                1
+#define OPTf_PSTACK_SIZE          2
+#define OPTf_NO_REG_VAR           3
+#define OPTf_WARN_PAREN           4
+#define OPTf_WARN_DUP_TYPES       5
+#define OPTf_WARN_UNUSED_VAR      6
+#define OPTf_WARN_HEADER_MISMATCH 7
+#define OPTf_EXTERNS_TO_IMPORTS   8
+#define OPTf_KEEP_PRIVATE         9
+#define OPTf_GLBLS_ON_DATA_HEAP   10
+#define OPTf_NO_BUILTIN_CONST     11
+
+I64 Option(I64 opt_num,I64 val)
+{//Compiler option get/set. hcc: parsed for compat, has no effect.
+  no_warn opt_num;
+  no_warn val;
+  return 0;
+}

@@ -166,7 +166,8 @@ private:
     // convert an rvalue to the given HolyC type's rvalue form (i64/double),
     // normalizing narrow ints ("resulting i1 is 0x5678")
     Value* convert(RV rv, const TypePtr& to, bool normalizeNarrow = true) {
-        if (!rv.v) return nullptr;
+        if (!rv.v)  // void (U0) value: reads as 0, TempleOS-forgiving
+            return to->isF64() ? (Value*)ConstantFP::get(f64_, 0.0) : (Value*)cI64(0);
         bool srcF = rv.v->getType()->isDoubleTy();
         if (to->isF64()) {
             if (srcF) return rv.v;
@@ -438,10 +439,7 @@ private:
             case Ex::Cast:
                 return e->castType;
             case Ex::Ident: {
-                if (VarSym* v = lookupVar(e->strVal)) {
-                    if (v->type->kind == Type::Array) return tyPtr(v->type->elem);
-                    return v->type;
-                }
+                if (VarSym* v = lookupVar(e->strVal)) return v->type;
                 auto f = funcs_.find(e->strVal);
                 if (f != funcs_.end()) return f->second.type->ret;
                 return tyI64();
