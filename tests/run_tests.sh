@@ -22,16 +22,19 @@ run() { # mode file
     esac
 }
 
-for hc in "$HERE"/cases/*.HC;    do run jit "$hc"; run aot "$hc"; done
+# golden = two backends x two opt levels, same expected bytes
+golden() { run jit "$1"; run aot "$1"; run jit-O2 "$1"; run aot-O2 "$1"; }
+
+for hc in "$HERE"/cases/*.HC;    do golden "$hc"; done
 for hc in "$HERE"/errors/*.HC;   do [ -e "$hc" ] && run error "$hc"; done
 for hc in "$HERE"/frontend/*.HC; do [ -e "$hc" ] && { run tokens "$hc"; run ast "$hc"; }; done
 for hc in "$HERE"/edge/*.HC; do
     [ -e "$hc" ] || continue
-    if grep -q '^//ERR:' "$hc"; then run error "$hc"; else run jit "$hc"; run aot "$hc"; fi
+    if grep -q '^//ERR:' "$hc"; then run error "$hc"; else golden "$hc"; fi
 done
 for hc in "$HERE"/anti_c/*.HC; do
     [ -e "$hc" ] || continue
-    if grep -q '^//ERR:' "$hc"; then run error "$hc"; else run jit "$hc"; run aot "$hc"; fi
+    if grep -q '^//ERR:' "$hc"; then run error "$hc"; else golden "$hc"; fi
 done
 
 echo
