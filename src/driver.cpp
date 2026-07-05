@@ -142,7 +142,7 @@ int compileMain(int argc, char** argv) {
     std::vector<char*> hcArgv;
     hcArgv.push_back(const_cast<char*>(input.c_str()));
     for (char* p : progArgs) hcArgv.push_back(p);
-    return runJIT(std::move(cg), (int64_t)hcArgv.size(), hcArgv.data());
+    return runJIT(std::move(cg), (int64_t)hcArgv.size(), hcArgv.data(), optLevel);
 }
 
 }  // namespace hc

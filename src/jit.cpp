@@ -6,7 +6,9 @@
 
 #include <llvm/ExecutionEngine/Orc/AbsoluteSymbols.h>
 #include <llvm/ExecutionEngine/Orc/ExecutorProcessControl.h>
+#include <llvm/ExecutionEngine/Orc/JITTargetMachineBuilder.h>
 #include <llvm/ExecutionEngine/Orc/LLJIT.h>
+#include <llvm/Support/CodeGen.h>
 #include <llvm/Support/TargetSelect.h>
 #include <setjmp.h>
 
@@ -131,10 +133,24 @@ static void defineRuntimeSymbols(LLJIT& jit) {
     cantFail(jit.getMainJITDylib().define(absoluteSymbols(std::move(m))));
 }
 
-static std::unique_ptr<LLJIT> makeJit(CodegenResult& cg, bool* ok) {
+static std::unique_ptr<LLJIT> makeJit(CodegenResult& cg, int optLevel, bool* ok) {
     *ok = false;
     initTargets();
-    auto jitOr = LLJITBuilder().create();
+    // Set the JIT backend codegen opt level to match -O (affects instruction
+    // selection / regalloc quality even when the IR pipeline didn't run).
+    CodeGenOptLevel cgLevel = optLevel >= 3   ? CodeGenOptLevel::Aggressive
+                              : optLevel == 2 ? CodeGenOptLevel::Default
+                              : optLevel == 1 ? CodeGenOptLevel::Less
+                                              : CodeGenOptLevel::None;
+    LLJITBuilder builder;
+    auto jtmb = JITTargetMachineBuilder::detectHost();
+    if (jtmb) {
+        jtmb->setCodeGenOptLevel(cgLevel);
+        builder.setJITTargetMachineBuilder(std::move(*jtmb));
+    } else {
+        consumeError(jtmb.takeError());
+    }
+    auto jitOr = builder.create();
     if (!jitOr) {
         errs() << "hcc: cannot create JIT: " << toString(jitOr.takeError()) << "\n";
         return nullptr;
@@ -157,9 +173,9 @@ static std::unique_ptr<LLJIT> makeJit(CodegenResult& cg, bool* ok) {
     return jit;
 }
 
-int runJIT(CodegenResult cg, int64_t argc, char** argv) {
+int runJIT(CodegenResult cg, int64_t argc, char** argv, int optLevel) {
     bool ok = false;
-    auto jit = makeJit(cg, &ok);
+    auto jit = makeJit(cg, optLevel, &ok);
     if (!ok) return 1;
     auto sym = jit->lookup("__HC_startup");
     if (!sym) {
@@ -186,7 +202,7 @@ std::string runExeSnippet(const std::string& src, const std::string& name,
     CodegenResult cg = codegen(*prog, name, /*aotMode=*/false);
     if (!cg.ok) return "";
     bool jok = false;
-    auto jit = makeJit(cg, &jok);
+    auto jit = makeJit(cg, /*optLevel=*/0, &jok);  // compile-time snippets: fast
     if (!jok) return "";
     auto sym = jit->lookup("__HC_startup");
     if (!sym) {

@@ -9,7 +9,8 @@
 namespace hc {
 
 // JIT-run a module's __HC_startup. Returns process-style exit code.
-int runJIT(CodegenResult cg, int64_t argc, char** argv);
+// optLevel (0..3) sets the JIT backend codegen opt level.
+int runJIT(CodegenResult cg, int64_t argc, char** argv, int optLevel);
 
 // Compile and run a #exe{} snippet; returns StreamPrint()ed text.
 // preludePath may be empty. Sets *ok=false on failure.
