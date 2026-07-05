@@ -9,3 +9,6 @@ undef ok
 line=40
 file has HC=1
 77 from-include
+4
+help ok
+1

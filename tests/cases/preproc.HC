@@ -42,3 +42,13 @@ bogus
 // #include
 #include "preproc_inc.HH"
 "%d %s\n",INC_CONST,IncFun;
+// #define dups are allowed and OVERSHADOW (scoping table) -- no #undef
+#define CNT 4
+"%d\n",CNT;
+// #help_index / #help_file are accepted and ignored
+#help_index "Compiler/Doc"
+#help_file "FooBar"
+"help ok\n";
+// __DIR__ builtin (value is path dependent, so assert a property;
+// __CMD_LINE__ is mode dependent and lives in mode.HC)
+"%d\n",StrLen(__DIR__)>0;

@@ -20,3 +20,7 @@ b.y=7; b.z=8;
 I64 F() { return 1; }
 I64 F() { return 2; }
 "%d\n",F;                        // 2
+I64 gv=1;
+"%d\n",gv;                       // 1
+I64 gv=2;                         // dup global: overshadows, re-inits here
+"%d\n",gv;                       // 2

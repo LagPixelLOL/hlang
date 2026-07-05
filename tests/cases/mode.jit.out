@@ -1,3 +1,4 @@
 mode:JIT
 fn says jit
+cmdline=1
 common

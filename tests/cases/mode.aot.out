@@ -1,3 +1,4 @@
 mode:AOT
 fn says aot
+cmdline=0
 common
