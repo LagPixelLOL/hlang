@@ -175,7 +175,7 @@ static std::unique_ptr<LLJIT> makeJit(CodegenResult& cg, int optLevel, bool* ok)
     return jit;
 }
 
-int runJIT(CodegenResult cg, int64_t argc, char** argv, int optLevel) {
+int runJIT(CodegenResult cg, int64_t argc, char** argv, int optLevel, bool noRun) {
     bool ok = false;
     auto jit = makeJit(cg, optLevel, &ok);
     if (!ok) return 1;
@@ -184,6 +184,7 @@ int runJIT(CodegenResult cg, int64_t argc, char** argv, int optLevel) {
         errs() << "hcc: " << toString(sym.takeError()) << "\n";
         return 1;
     }
+    if (noRun) return 0;  // --no-run: everything is compiled+materialized
     HC_RtInit(argc, argv);
     auto* fn = sym->toPtr<void (*)()>();
     fn();

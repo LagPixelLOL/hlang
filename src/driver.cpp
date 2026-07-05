@@ -46,7 +46,7 @@ static std::string findRuntimeArchive() {
 
 int compileMain(int argc, char** argv) {
     std::string input, outExe, outObj;
-    bool emitLL = false, noPrelude = false;
+    bool emitLL = false, noPrelude = false, noRun = false;
     int optLevel = 0;
     std::vector<std::string> includeDirs;
     std::vector<char*> progArgs;
@@ -66,6 +66,8 @@ int compileMain(int argc, char** argv) {
             emitLL = true;
         } else if (a == "--no-prelude") {
             noPrelude = true;
+        } else if (a == "--no-run") {
+            noRun = true;  // JIT: compile + materialize, skip execution
         } else if (a.size() == 3 && a[0] == '-' && a[1] == 'O') {
             optLevel = a[2] - '0';
         } else if (!a.empty() && a[0] == '-') {
@@ -142,7 +144,7 @@ int compileMain(int argc, char** argv) {
     std::vector<char*> hcArgv;
     hcArgv.push_back(const_cast<char*>(input.c_str()));
     for (char* p : progArgs) hcArgv.push_back(p);
-    return runJIT(std::move(cg), (int64_t)hcArgv.size(), hcArgv.data(), optLevel);
+    return runJIT(std::move(cg), (int64_t)hcArgv.size(), hcArgv.data(), optLevel, noRun);
 }
 
 }  // namespace hc

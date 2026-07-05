@@ -15,9 +15,10 @@
 #   2. correctness gate: both binaries must print byte-identical output
 #      (each kernel emits a deterministic checksum) -- a mismatch fails
 #      the run; timing garbage is worthless
-#   3. time best-of-$REPS: the AOT binary, the C binary, and `hcc -O3
-#      file.HC` under the JIT (that column includes compile time by
-#      nature -- it is the TempleOS-style edit-run cycle number)
+#   3. time best-of-$REPS: hcc's JIT split into LOAD (hcc --no-run:
+#      startup + front end + -O3 pipeline + ORC materialization) and RUN
+#      (total minus load -- the kernel's actual runtime under the JIT),
+#      then the AOT binary and the C binary
 set -u
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
@@ -50,8 +51,8 @@ best_ms() {
 }
 
 fail=0
-printf '%-10s %12s %12s %12s %10s\n' benchmark 'hcc-jit(ms)' 'hcc-aot(ms)' 'cc(ms)' 'aot/cc'
-printf '%-10s %12s %12s %12s %10s\n' ---------- ----------- ----------- ------- ------
+printf '%-10s %13s %12s %12s %12s %10s\n' benchmark 'jit-load(ms)' 'jit-run(ms)' 'hcc-aot(ms)' 'cc(ms)' 'aot/cc'
+printf '%-10s %13s %12s %12s %12s %10s\n' ---------- ------------ ----------- ----------- ------- ------
 
 for hc in "$HERE"/*.HC; do
     [ -e "$hc" ] || continue
@@ -76,15 +77,18 @@ for hc in "$HERE"/*.HC; do
         fail=1; continue
     fi
 
-    jit=$(best_ms "$HCC" -O3 "$hc")
+    jit_total=$(best_ms "$HCC" -O3 "$hc")
+    jit_load=$(best_ms "$HCC" --no-run -O3 "$hc")
+    jit_run=$(awk "BEGIN { r = $jit_total - $jit_load; if (r < 0) r = 0; printf \"%.1f\", r }")
     aot=$(best_ms "$TMP/$name.hcc")
     ccm=$(best_ms "$TMP/$name.cc")
     ratio=$(awk "BEGIN { c=$ccm; if (c == 0) c = 0.1; printf \"%.2f\", $aot / c }")
-    printf '%-10s %12s %12s %12s %10s\n' "$name" "$jit" "$aot" "$ccm" "$ratio"
+    printf '%-10s %13s %12s %12s %12s %10s\n' "$name" "$jit_load" "$jit_run" "$aot" "$ccm" "$ratio"
 done
 
 if [ "$fail" -ne 0 ]; then
     echo; echo "benchmark FAILURES above (compile or checksum)"; exit 1
 fi
 echo
-echo "checksums matched for every pair; hcc-jit includes compile time (best of $REPS)"
+echo "checksums matched for every pair (best of $REPS, sequential)"
+echo "jit-load = hcc --no-run (startup+compile+materialize); jit-run = total - load"

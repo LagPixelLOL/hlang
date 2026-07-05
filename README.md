@@ -61,6 +61,7 @@ hcc file.HC -c file.o        AOT compile to an object file
   -O0..-O3                   optimization (default -O0)
   -I dir                     include search dir
   --no-prelude               don't auto-include lib/HolyC.HH
+  --no-run                   JIT: compile + materialize, don't execute
 ```
 
 ## Language (per the spec)

@@ -22,7 +22,9 @@ static void usage() {
             "  --dump-ast         dump parse tree\n"
             "  -O0..-O3           optimization level (default -O0)\n"
             "  -I <dir>           add include search dir\n"
-            "  --no-prelude       don't auto-include the HolyC stdlib prelude\n");
+            "  --no-prelude       don't auto-include the HolyC stdlib prelude\n"
+            "  --no-run           JIT-compile and materialize, but don't execute\n"
+            "                     (compile check / benchmark load-time probe)\n");
 }
 
 static int dumpTokens(const std::string& path) {

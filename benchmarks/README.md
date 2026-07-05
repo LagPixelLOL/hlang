@@ -25,15 +25,20 @@ time — because parallelism poisons benchmark numbers.
   IEEE operations, so bit-identical results are a hard requirement, not
   a hope.)
 * **Best-of-N wall time** (default N=3) per column:
-  * `hcc-jit` — `hcc -O3 file.HC`, the TempleOS-style edit-run cycle;
-    this column *includes compile time* by nature.
+  * `jit-load` — `hcc --no-run -O3 file.HC`: process startup, front
+    end, `-O3` pipeline and ORC materialization, but no execution. The
+    fixed cost of the TempleOS-style edit-run cycle.
+  * `jit-run` — best total `hcc -O3 file.HC` minus best `jit-load`:
+    the kernel's actual runtime under the JIT. (Derived from two
+    separate best-of measurements, so small values carry a few ms of
+    noise; compare it against `hcc-aot`, which it should track.)
   * `hcc-aot` — the pre-built `hcc -O3 -o` native binary.
   * `cc` — the pre-built C binary.
   * `aot/cc` — the ratio that answers "how far from C is hcc's codegen?"
 
-## Why the jit column is so much bigger than aot
+## Where jit-load goes
 
-The jit number carries a fixed latency the kernel never sees, measured
+The load column is a fixed latency the kernel never sees, measured
 (on the reference box) as roughly:
 
 | cost | ~ms | what it is |
@@ -43,11 +48,12 @@ The jit number carries a fixed latency the kernel never sees, measured
 | `-O3` IR pipeline | 75 | `buildPerModuleDefaultPipeline(O3)` over the module (AOT pays this too, but off the clock) |
 | ORC materialization | 60 | instruction selection/relocation of every function at lookup time |
 
-So `hcc file.HC` answers "how fast is the edit-run cycle?" (~200-350 ms
-to compile *and* run a kernel at -O3 — TempleOS-grade interactivity),
-while `hcc-aot` vs `cc` is the honest codegen-quality comparison.
-Compiler-side codegen quality work should watch the `aot/cc` column;
-edit-cycle work should watch `jit` minus the kernel's own runtime.
+So `jit-load` answers "how fast is the edit-run cycle?" (~150-250 ms
+at -O3 — TempleOS-grade interactivity), `jit-run` should track
+`hcc-aot` (same IR, same backend — it is the sanity check that the JIT
+executes full-quality code), and `hcc-aot` vs `cc` is the honest
+codegen-quality comparison. Compiler-side codegen work should watch
+`aot/cc`; edit-cycle work should watch `jit-load`.
 
 ## Kernels
 
