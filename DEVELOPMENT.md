@@ -114,6 +114,16 @@ worth an `//ERR:` test in `tests/errors/`.
 * **Test-first for behavior questions.** When unsure what some HolyC
   construct does, write the golden test from the doc first, then make
   it pass. If the doc doesn't answer, decide, document in README, test.
+* **Don't project C onto HolyC.** For every test you write, ask: is this
+  behavior actually HolyC (doc / x86 / the recursive-descent structure),
+  or am I assuming C? Corners that C leaves unspecified/UB (argument and
+  operand evaluation order, `i++ + ++i`, unary-vs-backtick precedence)
+  are *not* HolyC guarantees — either avoid them, or label the golden as
+  hcc-defined. Places where HolyC genuinely differs from C must win:
+  local vars are `NoDups`/function-scope (no block shadowing), globals
+  overshadow, shifts mask the count to 6 bits (x86), assignment yields
+  the *untruncated* RHS, pointers are unscaled I64s. The `tests/edge/`
+  suite exists to pin these down; extend it, don't dilute it.
 * **Every bug fix gets a test** in the same commit. No exceptions —
   regressions in a compiler are silent and brutal.
 * **Formatting**: `clang-format -i src/*.cpp src/*.hpp` (4-space indent,

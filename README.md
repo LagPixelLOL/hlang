@@ -226,6 +226,11 @@ cannot (or that are deliberately out of scope):
   for `#ifjit`/`#ifaot`); stdin fixtures via `.in`;
 * **error tests** in `tests/errors/` — must fail with the message named
   in their `//ERR:` header;
+* **edge cases** in `tests/edge/` — common *and* uncommon patterns,
+  including deliberately-broken code. A file with a `//ERR:` header is an
+  error test (must be rejected cleanly with that diagnostic, never crash);
+  any other file is a golden test run under **both JIT and AOT**. ctest
+  auto-classifies each file;
 * **front-end goldens** in `tests/frontend/` — `--dump-tokens` /
   `--dump-ast` output.
 
@@ -234,6 +239,19 @@ The cases include the doc's examples verbatim (widening, `NullCase`,
 coverage of precedence, chaining, defaults/skipped args, varargs,
 classes, exceptions, sub-int access, pointers, the preprocessor, `#exe`,
 strings/memory/math, and I/O.
+
+The **edge** category stress-tests corners: integer overflow/wraparound
+and 64-bit widening boundaries, x86 shift-count masking (`1<<64==1`),
+precedence/unary chains, scoping (NoDups), deep & mutual recursion,
+pointer aliasing / linked lists, switch extremes (ranges, sub_switch,
+null cases, fallthrough), string escapes / embedded nulls / 8-char
+consts / format edges, deep inheritance / union punning / nested member
+chains, goto spaghetti / do-while-once, defaults / skipped / empty
+varargs / fn-ptr arrays, numeric boundaries — plus 12 broken programs
+that must each be rejected with a clear diagnostic and no crash. Each
+edge test's asserted behavior is checked against the HolyC docs (not C):
+genuinely-unspecified corners (e.g. evaluation order) are labeled
+hcc-defined rather than presented as HolyC guarantees.
 
 ## Contributing
 
