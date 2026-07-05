@@ -763,14 +763,13 @@ private:
                 return {b().CreatePtrToInt(lv.addr, i64_), tyPtr(lv.t)};
             }
             case P::Star: {
-                LV lv = genLValue(e);
-                if (!lv.addr) {
-                    // deref of fn-ptr yields the fn value itself
-                    RV p = genExpr(k);
-                    if (p.t->isPtr() && p.t->elem->kind == Type::Func) return p;
-                    return {cI64(0), tyI64()};
-                }
-                return loadFrom(lv.addr, lv.t, e->loc);
+                RV p = genExpr(k);
+                // deref of a fn ptr yields the fn value itself: (*fp)(...)
+                if (p.t->isPtr() && p.t->elem->kind == Type::Func) return p;
+                if (p.t->kind == Type::Func) return p;
+                TypePtr elem = p.t->isPtr() ? p.t->elem : tyU8();
+                if (elem->kind == Type::Void) elem = tyU8();
+                return loadFrom(asPtr(p.v), elem, e->loc);
             }
             case P::Not: {
                 RV v = genExpr(k);

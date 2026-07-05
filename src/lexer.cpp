@@ -274,6 +274,7 @@ Token Lexer::expandOrReturn(Token t) {
             }
             Token copy = bt;
             copy.loc = t.loc;  // report at use site
+            if (copy.kind == Tok::Ident) builtinMacro(copy);
             out.push_back(std::move(copy));
         }
     };

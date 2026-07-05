@@ -1,0 +1,36 @@
+(func F : U0 (I64 i=<dflt>, I64 j, ...)
+  (if
+    (chain-cmp < <
+      (int 1)
+      (ident i)
+      (int 10)
+    )
+    (expr-stmt
+      (call
+        (ident Print)
+        (str "yes")
+      )
+    )
+  )
+  (expr-stmt
+    (assign =
+      (ident i)
+      (binary +
+        (binary `
+          (ident i)
+          (int 2)
+        )
+        (binary *
+          (int 3)
+          (ident j)
+        )
+      )
+    )
+  )
+)
+(class C0 size=8
+  (member b : I64 @0)
+)
+(class C size=16
+  (member x : I64 @8)
+)

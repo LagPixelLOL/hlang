@@ -1,0 +1,28 @@
+D2
+D1
+D1 returned
+Demo done 0
+D2
+D1
+D2 hndlr Ch:Pt1
+Caught in D2
+Demo done 1
+D2
+D1
+D2 hndlr Ch:Pt2
+Demo hndlr Ch:Pt2
+Demo done 2
+D2
+D1
+D2 hndlr Ch:
+Demo hndlr Ch:
+Demo done 3
+D2
+D1
+D1 returned
+Demo hndlr Ch:Pt4
+Demo done 4
+caught loop after 6
+inner in
+outer in
+survived

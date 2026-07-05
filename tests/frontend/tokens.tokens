@@ -1,0 +1,29 @@
+2:1	ident	I64
+2:5	ident	a
+2:6	punct	=
+2:7	int	2
+2:8	punct	`
+2:9	int	3
+2:10	punct	;
+3:1	str	"s $ \t"
+3:10	punct	;
+4:1	char	16961 'AB'
+4:5	punct	;
+4:7	char	0 ''
+5:1	ident	a
+5:2	punct	.
+5:3	ident	u8
+5:5	punct	[
+5:6	int	1
+5:7	punct	]
+5:9	punct	<<=
+5:13	int	16
+5:18	punct	+
+5:20	int	3
+5:24	punct	;
+6:1	ident	x
+6:3	punct	^^
+6:6	ident	y
+6:8	punct	!=
+6:11	ident	z
+6:12	punct	...

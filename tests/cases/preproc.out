@@ -1,0 +1,11 @@
+16 Temple 32
+defined
+ndef ok
+if ok
+else ok
+undef ok
+3
+7
+line=40
+file has HC=1
+77 from-include
