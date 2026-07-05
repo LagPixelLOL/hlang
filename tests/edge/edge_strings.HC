@@ -1,6 +1,7 @@
 // EDGE: string escapes, embedded nulls, 8-char consts, format-string edges.
 
-// every escape
+// every escape hcc supports (\n \t \r \0 \\ \" \x are doc-grade;
+// \a \b \f \v are a hosted superset -- not asserted as canonical HolyC)
 "esc:[\t][\n][\r ->][\a][\b][\f][\v][\\][\"][\']\n";
 "hex:[\x41\x42\x43][\x7A]\n";        // ABC z
 
