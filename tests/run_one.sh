@@ -5,7 +5,12 @@
 #   run_one.sh <mode> <file.HC>
 #   mode: jit | aot | error | tokens | ast
 #
-# Exit: 0 pass, 77 skip (no expected output for this mode), 1 fail.
+# Exit: 0 pass, 1 fail, 77 skip.
+#   jit/aot/error: a missing golden is a FAILURE (catches deleted/renamed
+#                  goldens -- every case must have its output committed).
+#   tokens/ast:    a missing golden is a SKIP -- each frontend file targets
+#                  one dump mode on purpose; ctest only registers the mode
+#                  whose golden exists, so under ctest nothing is skipped.
 # Env:  HCC = path to hcc (required)
 set -u
 
@@ -22,14 +27,14 @@ fail() { echo "FAIL [$mode] $hc"; [ -n "${1:-}" ] && sed 's/^/    /' "$1"; exit 
 case "$mode" in
     jit)
         exp="$base.out"; [ -f "$base.jit.out" ] && exp="$base.jit.out"
-        [ -f "$exp" ] || exit 77
+        [ -f "$exp" ] || { echo "FAIL [jit] $hc: no golden ($exp)"; exit 1; }
         stdin_f=/dev/null; [ -f "$base.in" ] && stdin_f="$base.in"
         "$HCC" "$hc" -- test-arg1 test-arg2 < "$stdin_f" > "$TMP/out" 2>&1
         diff -u "$exp" "$TMP/out" > "$TMP/diff" 2>&1 || fail "$TMP/diff"
         ;;
     aot)
         exp="$base.out"; [ -f "$base.aot.out" ] && exp="$base.aot.out"
-        [ -f "$exp" ] || exit 77
+        [ -f "$exp" ] || { echo "FAIL [aot] $hc: no golden ($exp)"; exit 1; }
         stdin_f=/dev/null; [ -f "$base.in" ] && stdin_f="$base.in"
         "$HCC" "$hc" -o "$TMP/prog" > "$TMP/cerr" 2>&1 || fail "$TMP/cerr"
         "$TMP/prog" test-arg1 test-arg2 < "$stdin_f" > "$TMP/out" 2>&1
