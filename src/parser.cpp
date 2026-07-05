@@ -1093,6 +1093,14 @@ struct Parser::Impl {
             }
             s->decls.push_back(std::move(d));
             if (accept(P::Comma)) continue;
+            // a '(' here means someone wrote a function definition inside a
+            // function body -- HolyC functions are top-level only
+            if (is(P::LParen)) {
+                error(tok().loc, "nested function definitions are not allowed in HolyC "
+                                 "(functions are top-level only)");
+                skipBraceBlock();
+                return s;
+            }
             expect(P::Semi, "after variable declaration");
             return s;
         }
