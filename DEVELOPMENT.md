@@ -26,6 +26,11 @@ language behavior:
   indexing), implement it once, test it, and **document the decision in
   the README**. A silent divergence is a bug; a documented judgment
   call is engineering.
+* The per-claim audit trail lives in `checklist/` — one row per doc
+  claim with *implemented?* / *tested where?* / *deviations*. When you
+  add or change doc-visible behavior, update the matching checklist row
+  in the same commit; the README keeps only the headline semantics and
+  the two deviation lists (limitations, judgment calls).
 
 ### 2. Two backends, one behavior
 

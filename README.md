@@ -28,6 +28,7 @@ Hello World
 | `runtime/` | `hcrt` — the C runtime backing the stdlib (linked into `hcc` for JIT, `libhcrt.a` for AOT) |
 | `lib/`     | `HolyC.HH` — the auto-included stdlib prelude (KernelA.HH spirit) |
 | `examples/`| fun, heavily-commented HolyC programs (fractals, dungeons, `#exe{}` magic) |
+| `checklist/`| per-claim conformance audit against the HolyC docs (implemented / tested / deviations) |
 | `tests/`   | golden tests (run under **JIT and AOT, at -O0 and -O2**), error tests, front-end dumps |
 
 ## Build & test
@@ -38,7 +39,7 @@ Requires CMake, ninja/make, a C++17 compiler and LLVM 21 dev libraries
 ```sh
 cmake -S . -B build -G Ninja
 ninja -C build
-ninja -C build check        # run the test suite (182 tests)
+ninja -C build check        # run the test suite
 ```
 
 `hcc` links LLVM/zstd/zlib/libstdc++ statically — the resulting binary
@@ -60,101 +61,52 @@ hcc file.HC -c file.o        AOT compile to an object file
   --no-prelude               don't auto-include lib/HolyC.HH
 ```
 
-## Language support (per the spec)
+## Language (per the spec)
 
-* **Types** `U0 I0 I8 U8 I16 U16 I32 U32 I64 U64 F64` (+ the `*i`
-  intrinsic forms), pointers, arrays, classes. No `F32`. No `typedef`
-  (use `class`); `Bool`/`TRUE`/`FALSE`/`NULL`/`ON`/`OFF` are prelude
-  `#define`s, as in TempleOS.
-* **64-bit semantics**: "All values are extended to 64-bit when accessed.
-  Intermediate calculations are done with 64-bit values." All four doc
-  examples produce the documented results, including the reg-var
-  behavior of 32-bit locals (`I32 i4=0x80000000; i4>>1 == 0x40000000`
-  but `I32 i5=-0x80000000; i5>>1 == 0xFFFFFFFFC0000000`) and truncating
-  assignment for 8/16-bit variables (`i1=0x12345678` → `0x5678`).
-  `U64` operands select unsigned divide/mod/shift/compare.
-* **TempleOS operator precedence**, exactly:
-  `` ` ``,`>>`,`<<` | `*`,`/`,`%` | `&` | `^` | `|` | `+`,`-` |
-  `<`,`>`,`<=`,`>=` | `==`,`!=` | `&&` | `^^` | `||` | assignments.
-  So `2+1&3 == 3` and `1<<4/2 == 8`. The backtick operator raises to a
-  power (integer or F64). There is **no** question-colon operator.
-* **Chained comparisons**: `5<i<j+1<20` means `5<i && i<j+1 && j+1<20`
-  with single evaluation and short circuit.
-* **Assignment value is the untruncated RHS**: `j1=i1=0x12345678`
-  leaves `i1==0x5678`, `j1==0x12345678`.
-* **Postfix type casts**: `expr(U8 *)`, `MemberMetaData(...)(F64)`, plus
-  the `ToI64()/ToF64()/ToBool()` intrinsics.
-* **Print sugar**: `"str";` → `Print`; `"fmt %d\n",x;`;
-  `"" fmt,args;` (empty string = variable fmt); `'c';` and `'' expr;` →
-  `PutChars`; adjacent string literal concatenation; `'ABC'==0x434241`
-  multi-char char consts (up to 8); `$$` = literal `$`.
-* **No main()**: top-level statements execute at startup, in order
-  (`__HC_startup`; AOT emits a `main` wrapper that calls it).
-* **Functions**: default args anywhere (`Test(,3)` skips), calls without
-  parentheses (`Dir;`, `return YorN;`), `&Fun` for addresses, function
-  pointers (declared C-style) callable directly or via `Call()`,
-  duplicate definitions overshadow earlier ones.
-* **Varargs**: `...` with the `I64 argc`/`I64 argv[]` builtins; F64
-  varargs occupy 64-bit slots (`"%f"` reinterprets); forwarding via
-  `StrPrintJoin(NULL,fmt,argc,argv)` works as in TempleOS.
-* **switch**: jump tables, `case 4...7:` ranges, null cases (`case:` =
-  prev+1, starting at 0), unchecked `switch [i]`, `default:`,
-  fallthrough, and **sub_switch** `start:`/`end:` groups with correct
-  porch semantics (`break` inside a group routes through the end porch).
-* **Classes**: single inheritance (`class B:A`), `union`s, typed unions
-  (`public I64i union I64 {...}` — type in front is the whole-access
-  type), sub-int access (`q.i32[1].u8[2]`, `i.u16[1]=0x9ABC`), member
-  arrays, **packed layout** — members sit back-to-back with *no* C-style
-  alignment padding and `sizeof` is the exact byte sum (TempleOS aligns
-  by hand, which is why `pad`/`reserved` members are special-cased),
-  multiple `pad`/`reserved` members, duplicate class definitions
-  **overshadow** the earlier one (scoping table: class dups are
-  DupsAllowed — earlier instances keep the old layout), member meta data
-  parsed, instances declared after the class body,
-  `sizeof`/`offset(cls.member)`
-  (one level, per spec), `lastclass` default args resolved to the
-  previous argument's class name at each call site.
-* **try/catch/throw**: `throw('Ch8')` is a function with an ≤8-byte char
-  arg; `Fs->except_ch` readable in `catch{}`; the handler search
-  *continues outward* unless `Fs->catch_except=TRUE` (exact TempleOS
-  semantics); `PutExcept()`, `Fs->except_callers[0]`. Implemented with
-  setjmp frames in hcrt.
-* **Preprocessor** (inside `Lex()`, no separate pass): `#include ""`
-  (no `<>` form, as the spec demands), object-like `#define` (function
-  macros rejected: "I'm not a fan"), `#undef`, `#if`/`#ifdef`/
-  `#ifndef`/`#else`/`#endif` with `defined()`, `#ifaot`/`#ifjit`
-  (selects on compilation mode), `#assert` (warns), `#help_index`/
-  `#help_file` ignored, and **`#exe {...}`** — the block is compiled and
-  run at compile time by the in-process JIT, and its `StreamPrint()`
-  output is spliced into the token stream. `__DATE__ __TIME__ __FILE__
-  __LINE__ __DIR__ __CMD_LINE__` are builtins.
-* **Misc**: `goto`/labels (there is **no** `continue` — hcc says "use
-  goto" like the doc does), `no_warn`, `reg`/`noreg` accepted (register
-  allocation is LLVM's job), `public`/`static`/`extern`/`import`/
-  `_extern SYM`/`_import SYM` linkage (in a hosted world `import`
-  behaves like `extern`), `interrupt`/`haserrcode`/`argpop`/`noargpop`
-  parsed, `lock {}` compiles its body (see limitations), `Option()`/
-  `OPTf_*` accepted as no-ops.
+Everything the archived doc specifies is implemented: the type set (no
+`F32`, no `typedef`), print sugar, default/skipped args and no-paren
+calls, `argc`/`argv` varargs, chained comparisons, postfix casts,
+classes/unions/sub-int access, `switch` with ranges/null cases and
+`sub_switch` porches, `try`/`catch`/`throw` with the outward handler
+search, and the `Lex()`-integrated preprocessor with `#exe {}`. Every
+"there is no X" clause (`continue`, `typedef`, `?:`, `#define`
+functions, `#include <>`) is enforced with a diagnostic that quotes the
+doc.
 
-### Pointer arithmetic
+**The full conformance record — each doc claim with *implemented?*,
+*tested where?*, *deviating how?* — lives in [checklist/](checklist/).**
+The headline semantics, because they are *not* C:
 
-Pointers are just I64s ("all values are extended to 64-bit"): `+ - += -=
-++ --` on pointers move by **bytes**, not elements. Indexing `p[i]`
-*does* scale by the element size. Cast to step: `q=_d+ml->offset;` and
-`b=arr(U8 *); b++;` are the idiomatic forms, exactly like TempleOS code.
+* **Everything is 64-bit**: "all values are extended to 64-bit when
+  accessed; intermediate calculations are done with 64-bit values."
+  Sub-64 variables truncate in memory and widen on access; `U64`
+  operands select unsigned divide/mod/shift/compare; the assignment
+  *expression* yields the **untruncated** RHS (`j1=i1=0x12345678` →
+  `i1==0x5678`, `j1==0x12345678`).
+* **TempleOS precedence**: `` ` ``,`>>`,`<<` | `*`,`/`,`%` | `&` | `^`
+  | `|` | `+`,`-` | comparisons | `==`,`!=` | `&&` | `^^` | `||` |
+  assignments — so `2+1&3 == 3` and `1<<4/2 == 8`. `` ` `` is power;
+  there is no `?:`.
+* **Chained comparisons**: `5<i<j+1<20`, single evaluation, short
+  circuit.
+* **Pointers are I64s**: `+ - += -= ++ --` move by **bytes**; indexing
+  `p[i]` scales by element size; cast to step (`b=arr(U8 *); b++;`).
+* **Shift counts follow x86**: masked to 6 bits, `1<<64 == 1`.
+* **Scoping**: locals are function-scope `NoDups` — no C block
+  shadowing (`I64 x; { I64 x; }` is an error). Globals, functions,
+  classes and `#define`s are `DupsAllowed`: a dup **overshadows** (so a
+  file can be re-`#include`d). Class members are `NoDupsButPad`.
+  `extern` doubles as the forward reference (mutual recursion).
+* **Classes are packed**: members sit back-to-back with *no* C ABI
+  padding, `sizeof` is the exact byte sum; TempleOS aligns by hand with
+  `pad`/`reserved` members.
+* **No `main()`**: top-level statements run at startup, in order
+  (`__HC_startup`; AOT wraps it in a `main`).
 
-### Scoping (not C!)
-
-Per the spec's scoping table, **local vars are function-scope + `NoDups`**:
-unlike C there is *no* block-level shadowing — declaring the same local
-name twice in a function is an error (`I64 x; { I64 x; }` is rejected).
-A local *may* overshadow a **global** of the same name (global vars are
-`DupsAllowed`), and duplicate globals overshadow rather than error (so a
-file can be re-`#include`d). Idiomatic HolyC declares a local once and
-reuses it. Shift counts follow x86 (masked to 6 bits: `1<<64 == 1`).
-`extern` on a function or global also generates a **forward reference**
-(scopinglinkage.md) — the doc-attested way to spell mutual recursion; a
-bare C-style prototype is tolerated as the same thing.
+Deliberate deviations are confined to two sections: **Documented
+limitations** (TempleOS machinery a hosted compiler cannot have) and
+**Doc-silent judgment calls** (decisions where the doc is silent), both
+below.
 
 ### Doc-silent judgment calls (hcc-defined)
 
@@ -290,7 +242,7 @@ pointer aliasing / linked lists, switch extremes (ranges, sub_switch,
 null cases, fallthrough), string escapes / embedded nulls / 8-char
 consts / format edges, deep inheritance / union punning / nested member
 chains, goto spaghetti / do-while-once, defaults / skipped / empty
-varargs / fn-ptr arrays, numeric boundaries — plus 11 broken programs
+varargs / fn-ptr arrays, numeric boundaries — plus 12 broken programs
 that must each be rejected with a clear diagnostic and no crash. Each
 edge test's asserted behavior is checked against the HolyC docs (not C):
 genuinely-unspecified corners (e.g. evaluation order) are labeled
