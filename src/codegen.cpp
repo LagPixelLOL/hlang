@@ -1249,6 +1249,11 @@ private:
                 return;
             }
             case St::Label: {
+                if (fc_->labelsDefined.count(s->label)) {
+                    // two defs would splice a terminator mid-block (bad IR)
+                    error(s->loc, "duplicate label '" + s->label + "'");
+                    return;
+                }
                 BasicBlock* bb = getLabelBlock(s->label);
                 fc_->labelsDefined.insert(s->label);
                 if (!b().GetInsertBlock()->getTerminator()) b().CreateBr(bb);

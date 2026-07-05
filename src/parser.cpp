@@ -263,6 +263,13 @@ struct Parser::Impl {
                 e->kids.push_back(std::move(rhs));
                 return e;
             }
+            case P::Question:
+                // doc: "There is no question-colon operator."
+                error(tok().loc, "there is no question-colon operator in HolyC -- use if/else");
+                take();
+                parseAssign();  // consume the would-be 'then' expr
+                if (accept(P::Colon)) parseAssign();
+                return lhs;
             default:
                 return lhs;
         }
@@ -630,6 +637,12 @@ struct Parser::Impl {
                 error(t.loc, "there is no 'continue' stmt in HolyC -- use goto");
                 take();
                 accept(P::Semi);
+                return mkS(St::Empty, t.loc);
+            }
+            if (kw == "typedef") {
+                error(t.loc, "there is no 'typedef' in HolyC -- use class");
+                take();
+                skipToSemi();
                 return mkS(St::Empty, t.loc);
             }
             if (kw == "goto") {
@@ -1263,7 +1276,15 @@ struct Parser::Impl {
                     offset += sz;
                     if (offset > maxSize) maxSize = offset;
                 }
-                // multiple "pad"/"reserved" members allowed by spec
+                // scoping table: class members are NoDupsButPad -- only
+                // 'pad'/'reserved' may repeat within one class
+                if (m.name != "pad" && m.name != "reserved")
+                    for (auto& prev : ci->members)
+                        if (prev.name == m.name) {
+                            error(tok().loc, "duplicate member '" + m.name + "' in class '" +
+                                                 ci->name + "' (only 'pad'/'reserved' may repeat)");
+                            break;
+                        }
                 ci->members.push_back(std::move(m));
                 if (accept(P::Comma)) continue;
                 expect(P::Semi, "after class member");
