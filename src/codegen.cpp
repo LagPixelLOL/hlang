@@ -346,10 +346,10 @@ private:
                         *out = a % c;
                         return true;
                     case P::Shl:
-                        *out = a << c;
+                        *out = (int64_t)((uint64_t)a << (c & 63));
                         return true;
                     case P::Shr:
-                        *out = a >> c;
+                        *out = a >> (c & 63);
                         return true;
                     case P::Amp:
                         *out = a & c;
@@ -871,9 +871,12 @@ private:
             case P::Caret:
                 return {b().CreateXor(x, y), rt};
             case P::Shl:
-                return {b().CreateShl(x, y), rt};
+                // x86/HolyC mask shift count to 6 bits (SHL masks to &0x3F);
+                // avoids LLVM poison for counts >= 64
+                return {b().CreateShl(x, b().CreateAnd(y, cI64(63))), rt};
             case P::Shr:
                 // U64 >> is logical; I64 >> is arithmetic (doc example)
+                y = b().CreateAnd(y, cI64(63));
                 return {isU64(a.t) ? b().CreateLShr(x, y) : b().CreateAShr(x, y), rt};
             case P::Pow: {
                 Function* powi = getRT("HC_PowI64", i64_, {i64_, i64_});

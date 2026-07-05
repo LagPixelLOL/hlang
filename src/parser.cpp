@@ -210,9 +210,9 @@ struct Parser::Impl {
                     case P::Percent:
                         return b ? a % b : (*ok = false, 0);
                     case P::Shl:
-                        return a << b;
+                        return (int64_t)((uint64_t)a << (b & 63));
                     case P::Shr:
-                        return a >> b;
+                        return a >> (b & 63);
                     case P::Amp:
                         return a & b;
                     case P::Pipe:

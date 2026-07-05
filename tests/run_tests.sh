@@ -25,6 +25,10 @@ run() { # mode file
 for hc in "$HERE"/cases/*.HC;    do run jit "$hc"; run aot "$hc"; done
 for hc in "$HERE"/errors/*.HC;   do [ -e "$hc" ] && run error "$hc"; done
 for hc in "$HERE"/frontend/*.HC; do [ -e "$hc" ] && { run tokens "$hc"; run ast "$hc"; }; done
+for hc in "$HERE"/edge/*.HC; do
+    [ -e "$hc" ] || continue
+    if grep -q '^//ERR:' "$hc"; then run error "$hc"; else run jit "$hc"; run aot "$hc"; fi
+done
 
 echo
 if [ "$fail" -eq 0 ]; then
